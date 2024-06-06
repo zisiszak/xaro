@@ -1,0 +1,41 @@
+{
+	"compilerOptions": {
+		"composite": true,
+		"rootDir": "./src",
+		"noEmit": true,
+		"outDir": "./build",
+		"noResolve": false,
+		"tsBuildInfoFile": "tsconfig.tsbuildinfo",
+		"resolvePackageJsonExports": true,
+		"allowArbitraryExtensions": true,
+
+		"lib": ["DOM", "DOM.Iterable", "ESNext"],
+		"module": "ESNext",
+		"target": "ESNext",
+		"moduleResolution": "Bundler",
+		"typeRoots": ["@types"],
+
+		"jsx": "react-jsx",
+
+		/* Linting */
+		"strict": true,
+		"strictFunctionTypes": true,
+		"allowSyntheticDefaultImports": true,
+		"strictBindCallApply": true,
+		"noUnusedLocals": true,
+		"strictNullChecks": true,
+		"noImplicitAny": true,
+		"noUnusedParameters": true,
+		"noUncheckedIndexedAccess": true,
+		"allowUnusedLabels": false,
+		"noFallthroughCasesInSwitch": true,
+		"forceConsistentCasingInFileNames": true
+	},
+	"exclude": ["node_modules", "build"],
+	"references": [
+		{
+			"path": "./tsconfig.vite.json"
+		}
+	],
+	"include": ["src", "vite-env.d.ts", "build-test"]
+}

@@ -1,0 +1,19 @@
+{
+    "name": "@xaro/utils",
+    "version": "0.0.1",
+    "private": "true",
+    "license": "ISC",
+    "type": "module",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "devDependencies": {
+        "typescript": "^5.4.5"
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.json"
+    }
+}
