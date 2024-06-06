@@ -2,7 +2,10 @@
 
 A web-focused media library app initially created to learn more about Node + backend development. 
 
-It's a bit chaotic... Still a lot to be fixed up, but that's ok. That's the cost of writing code to solve solutions that probably already have dozens of libraries solving them. So why would I do that? Simple: To learn.
+It's a bit chaotic... Still a lot to be fixed up, but that's ok. 
+That's the cost of writing code to solve solutions that probably already have dozens of libraries solving them. 
+So why would I do that? 
+Simple: To learn.
 
 ## Features
 
