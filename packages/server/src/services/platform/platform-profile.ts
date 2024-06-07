@@ -1,7 +1,6 @@
+import { isError, newError } from 'exitus';
 import { addPlatformProfileIfNotExists } from '~/data/access/platform-profile.js';
 import { getPlatformDirs } from '~/data/access/platform.js';
-import { errorOutcome, isErrorOutcome } from '~/exports.js';
-import { logger } from '~/index.js';
 import { downloadPlatformAssets } from './download-platform-assets.js';
 import { extractPlatformProfileMetadata } from './extract-metadata.js';
 
@@ -46,23 +45,19 @@ export async function extractAndAddPlatformProfileIfNotExists({
 								});
 							})
 							.catch((err) => {
-								if (isErrorOutcome(err)) {
+								if (isError(err)) {
 									return;
 								}
-								logger.error(
-									errorOutcome({
-										message:
-											'Unexpected error downloading platform assets',
-										caughtException: err,
-										context: {
-											platformProfileSourceId:
-												data.sourceId,
-											downloadableAssets:
-												data.downloadableAssets,
-											platformId: linkedPlatformId,
-										},
-									}),
-								);
+								newError({
+									message: 'Unexpected error downloading platform assets',
+									caughtException: err,
+									context: {
+										platformProfileSourceId: data.sourceId,
+										downloadableAssets: data.downloadableAssets,
+										platformId: linkedPlatformId,
+									},
+									log: 'error',
+								});
 							});
 					}
 

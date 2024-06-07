@@ -1,6 +1,6 @@
+import { exitus } from 'exitus';
 import { type RequestHandler } from 'express';
 import { sql } from 'kysely';
-import { errorOutcome } from '~/exports.js';
 import { getRelatedContentData } from '../../data/access/content.js';
 import { type Rating } from '../../data/model/tables/UserLinkedContent.js';
 import { db, logger } from '../../index.js';
@@ -186,7 +186,7 @@ export const GetAllContentController: RequestHandler<
 
 	const results = await q.execute().catch((err: unknown) => {
 		logger.error(
-			errorOutcome({
+			exitus.newError({
 				caughtException: err,
 				message: 'Unexpected error querying database.',
 			}),

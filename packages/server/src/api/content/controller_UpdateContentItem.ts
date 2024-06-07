@@ -1,3 +1,4 @@
+import { exitus } from 'exitus';
 import { type RequestHandler } from 'express';
 import {
 	addContentSortingTags,
@@ -14,7 +15,6 @@ import {
 import { type UserLinkedContent } from '../../data/model/tables/index.js';
 import { db, logger } from '../../index.js';
 import { $callCheck } from '../../libs/kysely/index.js';
-import { ERROR, errorOutcome } from '../../utils/outcomes.js';
 import { toBoolishInt } from '../../utils/types-and-guards/index.js';
 
 export type Body = {
@@ -194,7 +194,7 @@ export const UpdateContentItemController: RequestHandler<
 			.$call($callCheck.anyExist)
 			.catch((err: unknown) => {
 				logger.error(
-					errorOutcome({
+					exitus.newError({
 						message:
 							'UpdateMediaController: Failed to check if a id-referenced MediaFile exists in the database.',
 						caughtException: err,
@@ -240,7 +240,8 @@ export const UpdateContentItemController: RequestHandler<
 			})
 			.catch((err: unknown) => {
 				logger.error(
-					errorOutcome(ERROR.UNEXPECTED, {
+	exitus.newError({
+		kind: exitus.errorKind.unexpected,
 						caughtException: err,
 						message:
 							'Failed to update UserMedia table with sanitised values',

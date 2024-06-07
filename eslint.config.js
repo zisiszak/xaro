@@ -19,6 +19,7 @@ export default [
 	{
 		ignores: [
 			'eslint.config.js',
+			'prettier.config.js',
 			'vite.config.ts',
 			'chrome-extension/**',
 			'build/**',

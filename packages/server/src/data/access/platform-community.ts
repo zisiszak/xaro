@@ -1,4 +1,4 @@
-import { errorOutcome } from '~/exports.js';
+import { newError } from 'exitus';
 import { db } from '~/index.js';
 import { $callInsert, $callSelect } from '~/libs/kysely/index.js';
 import { type PlatformCommunity } from '../model/tables/index.js';
@@ -18,8 +18,9 @@ export async function linkUserToPlatformCommunity({
 		})
 		.$call($callInsert.onConflictDoNothing)
 		.catch((err) =>
-			errorOutcome({
+			newError({
 				caughtException: err,
+				log: 'error',
 				message: 'Failed to link user to platform profile.',
 			}),
 		);
@@ -61,15 +62,14 @@ export async function addPlatformCommunityIfNotExists(
 
 			let insertValue: PlatformCommunity.Insertion;
 			if (extractMetadataWhenCommunityDoesNotExist) {
-				const extracted =
-					await extractMetadataWhenCommunityDoesNotExist().catch(
-						() => null,
-					);
+				const extracted = await extractMetadataWhenCommunityDoesNotExist().catch(
+					() => null,
+				);
 				if (extracted === null) {
 					return Promise.reject(
-						errorOutcome({
-							message:
-								'Failed to extract PlatformCommunity metadata.',
+						newError({
+							message: 'Failed to extract PlatformCommunity metadata.',
+							log: 'error',
 							context: {
 								...props,
 							},

@@ -1,8 +1,8 @@
+import { newError } from 'exitus';
 import { access, readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { config, db } from '../../index.js';
 import { mkdirDefaults } from '../../utils/fs/index.js';
-import { errorOutcome } from '../../utils/outcomes.js';
 
 export interface ExtractedIdsFile {
 	read(): Promise<string[]>;
@@ -12,19 +12,10 @@ export interface ExtractedIdsFile {
 }
 
 const readIdsFile = async (filePath: string) =>
-	readFile(filePath, 'utf-8').then((data) =>
-		data.split('\n').map((value) => value.trim()),
-	);
+	readFile(filePath, 'utf-8').then((data) => data.split('\n').map((value) => value.trim()));
 
-export async function createExtractedIdsFile(
-	platform: string,
-): Promise<ExtractedIdsFile> {
-	const filePath = path.join(
-		config.platformsDir,
-		platform,
-		'reference',
-		`extracted_ids.txt`,
-	);
+export async function createExtractedIdsFile(platform: string): Promise<ExtractedIdsFile> {
+	const filePath = path.join(config.platformsDir, platform, 'reference', `extracted_ids.txt`);
 
 	await mkdirDefaults(path.dirname(filePath));
 
@@ -32,10 +23,10 @@ export async function createExtractedIdsFile(
 		.catch(() => writeFile(filePath, ''))
 		.catch((err) =>
 			Promise.reject(
-				errorOutcome({
+				newError({
 					caughtException: err,
-					message:
-						'Failed to create ids file. Does the platform directory exist?',
+					log: 'error',
+					message: 'Failed to create ids file. Does the platform directory exist?',
 				}),
 			),
 		)
@@ -67,9 +58,7 @@ export async function createExtractedIdsFile(
 
 							const str = Array.from(new Set(ids)).join('\n');
 
-							if (
-								str !== Array.from(new Set(existing)).join('\n')
-							) {
+							if (str !== Array.from(new Set(existing)).join('\n')) {
 								await writeFile(this.filePath, str);
 							}
 
@@ -87,17 +76,9 @@ export async function createExtractedIdsFile(
 export async function createGenericExtractedIdsFile(
 	pluginModuleReference: PluginModuleReference,
 ): Promise<ExtractedIdsFile> {
-	const [plugin, module] = pluginModuleReference.split('.') as [
-		string,
-		string,
-	];
+	const [plugin, module] = pluginModuleReference.split('.') as [string, string];
 
-	const filePath = path.join(
-		config.libraryDir,
-		'plugins',
-		plugin,
-		`${module}_archive.txt`,
-	);
+	const filePath = path.join(config.libraryDir, 'plugins', plugin, `${module}_archive.txt`);
 
 	await mkdirDefaults(path.dirname(filePath));
 
@@ -105,10 +86,10 @@ export async function createGenericExtractedIdsFile(
 		.catch(() => writeFile(filePath, ''))
 		.catch((err) =>
 			Promise.reject(
-				errorOutcome({
+				newError({
 					caughtException: err,
-					message:
-						'Failed to create ids file. Does the plugin directory exist?',
+					log: 'error',
+					message: 'Failed to create ids file. Does the plugin directory exist?',
 				}),
 			),
 		)
@@ -139,16 +120,12 @@ export async function createGenericExtractedIdsFile(
 						)
 						.execute()
 						.then(async (data) => {
-							const urls = data.map(
-								({ sourceUrl }) => sourceUrl!,
-							);
+							const urls = data.map(({ sourceUrl }) => sourceUrl!);
 							const existing = await this.read();
 
 							const str = Array.from(new Set(urls)).join('\n');
 
-							if (
-								str !== Array.from(new Set(existing)).join('\n')
-							) {
+							if (str !== Array.from(new Set(existing)).join('\n')) {
 								await writeFile(this.filePath, str);
 							}
 

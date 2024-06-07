@@ -1,3 +1,4 @@
+import { errorKind, newError } from 'exitus';
 import { access } from 'fs/promises';
 import path from 'path';
 import { __coreParams } from '../../../config/core-params.js';
@@ -6,16 +7,11 @@ import { config, db } from '../../../index.js';
 import { convertImage } from '../../../libs/sharp/convert-image.js';
 import { sequentialAsync } from '../../../utils/async/sequential-async.js';
 import { readImageFileDimensions } from '../../../utils/media-utils/read-image-file-dimensions.js';
-import { FS_ERROR, errorOutcome } from '../../../utils/outcomes.js';
 import { formatContentFileFilename } from '../file-management/format-content-filename.js';
 import { resolveContentFileDirectory } from '../file-management/resolve-content-directory.js';
 import { importNewMediaFile } from '../import.js';
 
-export const createOptimisedFilesForImage = async ({
-	contentId,
-}: {
-	contentId: number;
-}) => {
+export const createOptimisedFilesForImage = async ({ contentId }: { contentId: number }) => {
 	const files = await db
 		.selectFrom('ContentFile')
 		.selectAll()
@@ -24,7 +20,7 @@ export const createOptimisedFilesForImage = async ({
 
 	if (files.length === 0) {
 		return Promise.reject(
-			errorOutcome({
+			newError({
 				message: 'No files found in database for provided contentId.',
 				context: {
 					contentId: contentId,
@@ -33,14 +29,11 @@ export const createOptimisedFilesForImage = async ({
 		);
 	}
 
-	const original = files.find(
-		(file) => file.category === contentFileCategoriesMap.ORIGINAL,
-	);
+	const original = files.find((file) => file.category === contentFileCategoriesMap.ORIGINAL);
 	if (!original) {
 		return Promise.reject(
-			errorOutcome({
-				message:
-					'No original content file exists for provided contentId.',
+			newError({
+				message: 'No original content file exists for provided contentId.',
 				context: {
 					contentId: contentId,
 					files,
@@ -53,12 +46,9 @@ export const createOptimisedFilesForImage = async ({
 	const optimisedFiles = files.filter(
 		(file) => file.category === contentFileCategoriesMap.OPTIMISED,
 	);
-	const optimisedMissing =
-		__coreParams.contentFileOptimisation.configs.filter(
-			(set) =>
-				optimisedFiles.some((file) => file.label === set.label) ===
-				false,
-		);
+	const optimisedMissing = __coreParams.contentFileOptimisation.configs.filter(
+		(set) => optimisedFiles.some((file) => file.label === set.label) === false,
+	);
 
 	if (optimisedMissing.length === 0) {
 		return;
@@ -68,10 +58,13 @@ export const createOptimisedFilesForImage = async ({
 
 	await access(filePath).catch(() =>
 		Promise.reject(
-			errorOutcome(FS_ERROR, {
+			newError({
+				kind: errorKind.fs,
 				message: 'Original content file not accessible in filesystem.',
+				payload: {
+					file: filePath,
+				},
 				context: {
-					filePath: filePath,
 					contentFileId: original.id,
 					contentId: contentId,
 				},
@@ -94,9 +87,8 @@ export const createOptimisedFilesForImage = async ({
 		const { width, height } = readImageFileDimensions(filePath);
 		if (!width || !height) {
 			return Promise.reject(
-				errorOutcome({
-					message:
-						'Could not read image metadata for original content file.',
+				newError({
+					message: 'Could not read image metadata for original content file.',
 					context: {
 						filePath,
 						contentFileId: original.id,
@@ -136,17 +128,13 @@ export const createOptimisedFilesForImage = async ({
 						fileSource: {
 							category: contentFileCategoriesMap.OPTIMISED,
 							label: settings.label,
-							currentFilePath: path.join(
-								outputDir,
-								outputFilename,
-							),
+							currentFilePath: path.join(outputDir, outputFilename),
 						},
 					}),
 				)
 				.catch((err: unknown) =>
-					errorOutcome({
-						message:
-							'Unexpected error when generating optimised media.',
+					newError({
+						message: 'Unexpected error when generating optimised media.',
 						caughtException: err,
 						context: {
 							originalFilePath: filePath,
@@ -156,7 +144,7 @@ export const createOptimisedFilesForImage = async ({
 				);
 		}),
 	);
-}
+};
 
 export const createOptimisedFilesForAllImages = async () => {
 	const mediaRequiringOptimisation = await db
@@ -165,9 +153,5 @@ export const createOptimisedFilesForAllImages = async () => {
 		.where('kind', '=', 'image')
 		.execute();
 
-	return sequentialAsync(
-		createOptimisedFilesForImage,
-		mediaRequiringOptimisation,
-		true,
-	);
+	return sequentialAsync(createOptimisedFilesForImage, mediaRequiringOptimisation, true);
 };

@@ -1,7 +1,7 @@
 import { cleanInt } from '@xaro/utils';
+import { newError } from 'exitus';
 import { homedir } from 'os';
 import path from 'path';
-import { errorOutcome } from '~/exports.js';
 import { readAndParseJSON } from '~/utils/fs/index.js';
 import { isConfigurationFile } from './custom.js';
 
@@ -35,10 +35,8 @@ export type UpdateServerConfigArgs = {
 };
 export const updateServerConfig = async (args: UpdateServerConfigArgs) => {
 	const customConfig = args['--config-file']
-		? await readAndParseJSON(
-				args['--config-file'],
-				isConfigurationFile,
-			) : null;
+		? await readAndParseJSON(args['--config-file'], isConfigurationFile)
+		: null;
 
 	if (typeof process.env.JWT_SECRET !== 'string') {
 		console.error('JWT_SECRET environment variable is not defined!');
@@ -50,31 +48,21 @@ export const updateServerConfig = async (args: UpdateServerConfigArgs) => {
 		customConfig?.libraryDir ??
 		process.env.LIBRARY_DIR ??
 		path.join(homedir(), 'zmh');
-	const clientBuildDir =
-		args['--web-client-build-dir'] ?? process.env.CLIENT_BUILD_DIR;
-	const port = cleanInt(
-		args['--port'] ?? customConfig?.port ?? process.env.PORT ?? 3000,
-	);
-	const host =
-		args['--host'] ?? customConfig?.host ?? process.env.HOST ?? 'localhost';
+	const clientBuildDir = args['--web-client-build-dir'] ?? process.env.CLIENT_BUILD_DIR;
+	const port = cleanInt(args['--port'] ?? customConfig?.port ?? process.env.PORT ?? 3000);
+	const host = args['--host'] ?? customConfig?.host ?? process.env.HOST ?? 'localhost';
 
 	if (!libraryDir || !clientBuildDir || !port || !host) {
-		return errorOutcome(
-			{
-				message: 'Missing required configuration values',
-				context: {args}
-			}
-		);
+		return newError({
+			message: 'Missing required configuration values',
+			context: { args },
+		});
 	}
 
 	const ffmpegPath =
-		args['--ffmpeg-path'] ??
-		customConfig?.libs?.ffmpeg?.ffmpegPath ??
-		process.env.FFMPEG_PATH;
+		args['--ffmpeg-path'] ?? customConfig?.libs?.ffmpeg?.ffmpegPath ?? process.env.FFMPEG_PATH;
 	const ffprobePath =
-		args['ffprobe-path'] ??
-		customConfig?.libs?.ffmpeg?.ffprobePath ??
-		process.env.FFPROBE_PATH;
+		args['ffprobe-path'] ?? customConfig?.libs?.ffmpeg?.ffprobePath ?? process.env.FFPROBE_PATH;
 	ffmpegPath && (process.env.FFMPEG_PATH = ffmpegPath);
 	ffprobePath && (process.env.FFPROBE_PATH = ffprobePath);
 

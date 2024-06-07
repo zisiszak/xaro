@@ -1,26 +1,22 @@
+import { newError } from 'exitus';
 import { access, rename, rm } from 'fs/promises';
 import path from 'path';
 import { contentFileCategoriesMap } from '~/data/model/shared/content-file-categories.js';
 import { trueBasename } from '~/utils/fs/index.js';
-import { errorOutcome } from '~/utils/outcomes.js';
 import { type ContentFile } from '../../../data/model/tables/index.js';
 import { config, db } from '../../../index.js';
 import { convertImage } from '../../../libs/sharp/convert-image.js';
 import { sequentialAsync } from '../../../utils/async/sequential-async.js';
 import { hashFile } from '../../../utils/fs/hash-file.js';
 
-export const optimiseGeneratedThumbnail = async (
-	contentFile: ContentFile.Selection,
-) => {
+export const optimiseGeneratedThumbnail = async (contentFile: ContentFile.Selection) => {
 	if (contentFile.category !== contentFileCategoriesMap.THUMB_GENERATED) {
 		return Promise.reject(
-			errorOutcome({
-				message:
-					'Content file provided is not of the correct category.',
+			newError({
+				message: 'Content file provided is not of the correct category.',
 				context: {
 					inputFileCategory: contentFile.category,
-					expectedFileCategory:
-						contentFileCategoriesMap.THUMB_GENERATED,
+					expectedFileCategory: contentFileCategoriesMap.THUMB_GENERATED,
 				},
 			}),
 		);
@@ -35,7 +31,7 @@ export const optimiseGeneratedThumbnail = async (
 	const fileExists = await access(filePath).catch(() => false);
 	if (fileExists === false) {
 		return Promise.reject(
-			errorOutcome({
+			newError({
 				message: 'File not found.',
 				context: {
 					filePath: filePath,
@@ -57,40 +53,27 @@ export const optimiseGeneratedThumbnail = async (
 			quality: 75,
 		},
 	}).then(async (res) => {
-		const generatedThumbFilepath = path.join(
-			tempDir,
-			tempFilename + '.avif',
-		);
+		const generatedThumbFilepath = path.join(tempDir, tempFilename + '.avif');
 		const context = {
 			inputFilePath: filePath,
 			generatedThumbFilePath: generatedThumbFilepath,
 		};
 
-		return rm(
-			path.join(
-				path.dirname(filePath),
-				trueBasename(filePath) + contentFile.extension,
-			),
-		)
+		return rm(path.join(path.dirname(filePath), trueBasename(filePath) + contentFile.extension))
 			.catch((err) =>
 				Promise.reject(
-					errorOutcome({
+					newError({
 						caughtException: err,
-						message:
-							'Failed to remove existing unoptimised thumbnail file.',
+						message: 'Failed to remove existing unoptimised thumbnail file.',
 						context,
 					}),
 				),
 			)
 			.then(() =>
-				rename(
-					path.join(tempDir, tempFilename + '.avif'),
-					filePath,
-				).catch((err) =>
+				rename(path.join(tempDir, tempFilename + '.avif'), filePath).catch((err) =>
 					Promise.reject(
-						errorOutcome({
-							message:
-								'Failed to rename generated thumbnail file.',
+						newError({
+							message: 'Failed to rename generated thumbnail file.',
 							context,
 							caughtException: err,
 						}),
@@ -111,7 +94,7 @@ export const optimiseGeneratedThumbnail = async (
 					.then(() => undefined)
 					.catch((err) =>
 						Promise.reject(
-							errorOutcome({
+							newError({
 								message:
 									'Failed to update ContentFile table with generated thumbnail details',
 								context,
@@ -121,7 +104,7 @@ export const optimiseGeneratedThumbnail = async (
 					),
 			);
 	});
-}
+};
 
 export const optimiseAllGeneratedThumbnails = async () => {
 	const thumbsRequiringOptimisation = await db
@@ -139,9 +122,5 @@ export const optimiseAllGeneratedThumbnails = async () => {
 		return;
 	}
 
-	return sequentialAsync(
-		optimiseGeneratedThumbnail,
-		thumbsRequiringOptimisation,
-		true,
-	);
-}
+	return sequentialAsync(optimiseGeneratedThumbnail, thumbsRequiringOptimisation, true);
+};

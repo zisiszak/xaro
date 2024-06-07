@@ -1,5 +1,5 @@
+import { newError } from 'exitus';
 import { type RequestHandler } from 'express';
-import { errorOutcome } from '~/exports.js';
 import {
 	isUserAccessTokenPayload,
 	userAccessTokenKey,
@@ -15,11 +15,7 @@ import { decodeJWT, encodeJWT } from '../../utils/web-auth/json-web-token.js';
  *
  *  It decodes a request's {@link UserAccessTokenPayload} if it exists, and checks if the decoded `id` exists in the `User` table. Also resigns the token if it has outdated properties.
  */
-export const AuthorizeUserAccessTokenMiddleware: RequestHandler = (
-	req,
-	res,
-	next,
-) => {
+export const AuthorizeUserAccessTokenMiddleware: RequestHandler = (req, res, next) => {
 	const cookie = req.cookies[userAccessTokenKey] as string | undefined;
 	if (!cookie) {
 		return res.status(401).end();
@@ -72,16 +68,14 @@ export const AuthorizeUserAccessTokenMiddleware: RequestHandler = (
 			next();
 		})
 		.catch((err) => {
-			logger.error(
-				errorOutcome({
-					message:
-						'Unhandled exception attempting to authorize user access token.',
-					caughtException: err,
-					context: {
-						user,
-					},
-				}),
-			);
-			res.status(500).end();
+			newError({
+				message: 'Unhandled exception attempting to authorize user access token.',
+				caughtException: err,
+				log: 'error',
+				context: {
+					user,
+				},
+			}),
+				res.status(500).end();
 		});
 };

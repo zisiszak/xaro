@@ -1,3 +1,4 @@
+import { GenericError, isError, newError } from 'exitus';
 import path from 'path';
 import { sequentialAsync } from '~/utils/async/sequential-async.js';
 import { __coreParams } from '../../config/core-params.js';
@@ -10,11 +11,6 @@ import { config, db, logger } from '../../index.js';
 import { generateThumbnails } from '../../libs/ffmpeg/thumbnails/generate-thumbnails.js';
 import { type ThumbnailConfig } from '../../libs/ffmpeg/thumbnails/parse-props.js';
 import { $callCheck, selectFirst } from '../../libs/kysely/index.js';
-import {
-	ErrorOutcome,
-	errorOutcome,
-	isErrorOutcome,
-} from '../../utils/outcomes.js';
 import { importNewMediaFile } from './import.js';
 
 export type GenerateMediaThumbnailsProps = {
@@ -34,15 +30,13 @@ export const generateMediaThumbnails = async ({
 }) => {
 	if (Array.isArray(thumbnails) && thumbnails.length === 0) {
 		return Promise.reject(
-			errorOutcome(
-				{
-					message: 'No thumbnail configurations provided.',
-					context: {
-						mediaId,
-					},
+			newError({
+				message: 'No thumbnail configurations provided.',
+				context: {
+					mediaId,
 				},
-				logger.error,
-			),
+				log: 'error',
+			}),
 		);
 	}
 	const thumbs = thumbnails ?? __coreParams.contentDefaultThumbnails;
@@ -55,14 +49,11 @@ export const generateMediaThumbnails = async ({
 		.$call(selectFirst);
 	if (typeof originalMediaFile === 'undefined') {
 		return Promise.reject(
-			errorOutcome(
-				{
-					context: { mediaId, thumbs },
-					message:
-						'No original media file found to generate thumbnail(s) from.',
-				},
-				logger.error,
-			),
+			newError({
+				context: { mediaId, thumbs },
+				log: 'error',
+				message: 'No original media file found to generate thumbnail(s) from.',
+			}),
 		);
 	}
 
@@ -70,23 +61,18 @@ export const generateMediaThumbnails = async ({
 	const filePath = path.join(config.mediaDir, relPath);
 
 	if (
-		!(
-			videoExtensions.includes(extension as VideoContentFileExtension) ||
-			extension === '.gif'
-		)
+		!(videoExtensions.includes(extension as VideoContentFileExtension) || extension === '.gif')
 	) {
 		return Promise.reject(
-			errorOutcome(
-				{
-					message: 'Unsupported original media',
-					context: {
-						mediaId,
-						filePath,
-						extension,
-					},
+			newError({
+				message: 'Unsupported original media',
+				context: {
+					mediaId,
+					filePath,
+					extension,
 				},
-				logger.error,
-			),
+				log: 'error',
+			}),
 		);
 	}
 
@@ -97,16 +83,8 @@ export const generateMediaThumbnails = async ({
 			.where((eb) =>
 				eb.and([
 					eb('linkedContentId', '=', mediaId),
-					eb(
-						'category',
-						'=',
-						contentFileCategoriesMap.THUMB_GENERATED,
-					),
-					eb(
-						'label',
-						'=',
-						__coreParams.contentDefaultThumbnails[0]!.label,
-					),
+					eb('category', '=', contentFileCategoriesMap.THUMB_GENERATED),
+					eb('label', '=', __coreParams.contentDefaultThumbnails[0]!.label),
 				]),
 			)
 			.$call($callCheck.anyExist);
@@ -126,9 +104,7 @@ export const generateMediaThumbnails = async ({
 		outputDir: config.awaitingImportDir,
 		thumbnails: thumbs,
 	}).then(async (thumbs) => {
-		const successfulThumbs = thumbs.filter(
-			<T>(v: T | ErrorOutcome<any>): v is T => !isErrorOutcome(v),
-		);
+		const successfulThumbs = thumbs.filter(<T>(v: T | GenericError): v is T => !isError(v));
 
 		return await Promise.all(
 			successfulThumbs.map(
@@ -140,22 +116,6 @@ export const generateMediaThumbnails = async ({
 							currentFilePath: filepath,
 							timestamp,
 						},
-					}).catch((err) => {
-						if (isErrorOutcome(err)) {
-							logger.error(err);
-							return err;
-						}
-						return errorOutcome(
-							{
-								message:
-									'Unknown error when importing generated thumbnail',
-								context: {
-									thumbnailFile: filepath,
-									mediaId,
-								},
-							},
-							logger.error,
-						);
 					}),
 			),
 		);
@@ -185,11 +145,7 @@ export async function generateMissingThumbnails() {
 							.selectFrom('ContentFile')
 							.select('linkedContentId as id')
 							.where('extension', '=', '.gif')
-							.where(
-								'category',
-								'=',
-								contentFileCategoriesMap.ORIGINAL,
-							),
+							.where('category', '=', contentFileCategoriesMap.ORIGINAL),
 					),
 				]),
 			]),

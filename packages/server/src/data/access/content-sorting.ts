@@ -1,5 +1,6 @@
-import { errorOutcome, toAlphanumericKebabCase } from '~/exports.js';
-import { db, logger } from '~/index.js';
+import { newError } from 'exitus';
+import { toAlphanumericKebabCase } from '~/exports.js';
+import { db } from '~/index.js';
 
 type SortingType = 'SortingTag' | 'SortingGenre' | 'SortingCategory';
 
@@ -25,20 +26,12 @@ const addSortingType =
 		}
 
 		return db
-			.selectFrom(
-				kind as 'SortingTag' | 'SortingGenre' | 'SortingCategory',
-			)
+			.selectFrom(kind as 'SortingTag' | 'SortingGenre' | 'SortingCategory')
 			.selectAll()
 			.where((eb) =>
 				eb.and([
-					eb.or([
-						eb('name', '=', name),
-						eb('displayName', '=', displayName),
-					]),
-					eb.or([
-						eb('linkedUserId', '=', userId),
-						eb('linkedUserId', 'is', null),
-					]),
+					eb.or([eb('name', '=', name), eb('displayName', '=', displayName)]),
+					eb.or([eb('linkedUserId', '=', userId), eb('linkedUserId', 'is', null)]),
 				]),
 			)
 			.executeTakeFirst()
@@ -47,12 +40,7 @@ const addSortingType =
 					return props;
 				}
 				return await db
-					.insertInto(
-						kind as
-							| 'SortingTag'
-							| 'SortingGenre'
-							| 'SortingCategory',
-					)
+					.insertInto(kind as 'SortingTag' | 'SortingGenre' | 'SortingCategory')
 					.values({
 						name,
 						displayName,
@@ -71,10 +59,7 @@ const addSortingType =
 export const addSortingTag = addSortingType('SortingTag');
 
 export const clearContentSortingTags = async (contentId: number) =>
-	db
-		.deleteFrom('SortingTagLinkedContent')
-		.where('linkedContentId', '=', contentId)
-		.execute();
+	db.deleteFrom('SortingTagLinkedContent').where('linkedContentId', '=', contentId).execute();
 
 export const addContentSortingTags = async ({
 	sortingTagIds,
@@ -94,15 +79,14 @@ export const addContentSortingTags = async ({
 		.onConflict((cb) => cb.doNothing())
 		.execute()
 		.catch((err) => {
-			logger.error(
-				errorOutcome({
-					message: 'Apply content sorting tag unhandled exception.',
-					caughtException: err,
-					context: {
-						sortingTagIds,
-						contentId,
-					},
-				}),
-			);
+			newError({
+				message: 'Apply content sorting tag unhandled exception.',
+				caughtException: err,
+				log: 'error',
+				context: {
+					sortingTagIds,
+					contentId,
+				},
+			});
 		});
 };

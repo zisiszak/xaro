@@ -1,3 +1,4 @@
+import { exitus, isError, newError } from 'exitus';
 import { type RequestHandler } from 'express';
 import { rm } from 'fs/promises';
 import { type Guard } from 'is-guard';
@@ -14,7 +15,6 @@ import {
 	type PlatformManager,
 } from '~/plugins/index.js';
 import { sequentialAsync } from '~/utils/async/sequential-async.js';
-import { errorOutcome, isErrorOutcome } from '~/utils/outcomes.js';
 import { importExtractedContent } from '../../services/platform/import-extracted-content.js';
 
 export interface Params {
@@ -29,17 +29,12 @@ export interface Body {
 /**
  * Extracts content for an existing platform, using the platform's assigned media and metadata extractors.
  */
-export const ExtractPlatformContentController: RequestHandler<
-	Params,
-	any,
-	Body
-> = (req, res) => {
+export const ExtractPlatformContentController: RequestHandler<Params, any, Body> = (req, res) => {
 	const { contentExtractorType, contentSource, extractorOptions } = req.body;
 	if (!isContentExtractorType(contentExtractorType)) {
 		logger.warn(
-			errorOutcome({
-				message:
-					'Invalid content extractor type provided in request body.',
+			exitus.newError({
+				message: 'Invalid content extractor type provided in request body.',
 				context: {
 					type: contentExtractorType,
 				},
@@ -87,28 +82,24 @@ export const ExtractPlatformContentController: RequestHandler<
 					'PlatformMediaExtractor plugin module does not support the provided content extractor type.';
 				errorContext.providedExtractorType = contentExtractorType;
 			}
-			logger.error(
-				errorOutcome({
-					message: errorMessage,
-					context: errorContext,
-				}),
-			);
+
+			newError({
+				message: errorMessage,
+				context: errorContext,
+				log: 'error',
+			});
 			return res.status(500).end();
 		}
 
 		mediaExtractor = module.contentExtractor as PlatformContentExtractor;
 	}
 
-	if (
-		!mediaExtractor ||
-		mediaExtractor.kind !== 'platform-content-extractor'
-	) {
-		logger.error(
-			errorOutcome({
-				message:
-					'PlatformMediaExtractor not found or referenced module is not of the correct kind.',
-			}),
-		);
+	if (!mediaExtractor || mediaExtractor.kind !== 'platform-content-extractor') {
+		newError({
+			message:
+				'PlatformMediaExtractor not found or referenced module is not of the correct kind.',
+			log: 'error',
+		});
 		return res.status(500).end();
 	}
 
@@ -132,13 +123,11 @@ export const ExtractPlatformContentController: RequestHandler<
 	}
 
 	if (!areParamsValid) {
-		logger.error(
-			errorOutcome({
-				message:
-					'Invalid params provided for PlatformMediaExtractor call',
-				context: { params: contentSource },
-			}),
-		);
+		newError({
+			message: 'Invalid params provided for PlatformMediaExtractor call',
+			context: { params: contentSource },
+			log: 'error',
+		});
 		return res.status(400).end();
 	}
 
@@ -170,28 +159,27 @@ export const ExtractPlatformContentController: RequestHandler<
 			...content,
 			source: {
 				...content.source,
-				platformId:
-					content.source.platformId ?? req.forwarded.platform!.id,
+				platformId: content.source.platformId ?? req.forwarded.platform!.id,
 			},
 		}).catch((err) => {
-			if (!isErrorOutcome(err)) {
-				logger.error(
-					errorOutcome({
-						message:
-							'Unexpected error importing extracted content.',
-						caughtException: err,
-						context: {
-							files: content.files,
-							queuedByUserId: content.queuedByUserId,
-						},
-					}),
-				);
+			if (isError(err)) {
+				if (err.debug?.logged) {
+					return;
+				}
+				logger.error(err);
+			} else {
+				newError({
+					message: 'Unexpected error importing extracted content.',
+					caughtException: err,
+					log: 'error',
+					context: {
+						files: content.files,
+						queuedByUserId: content.queuedByUserId,
+					},
+				});
 			}
 		});
-	const onContentItemExtracted: ContentItemExtractionCallback = (
-		content,
-		cleanup,
-	) => {
+	const onContentItemExtracted: ContentItemExtractionCallback = (content, cleanup) => {
 		logger.info({
 			message: 'onContentItemExtracted',
 			context: {
@@ -205,9 +193,7 @@ export const ExtractPlatformContentController: RequestHandler<
 					Promise.all(
 						cleanup.files!.map((filePath) => {
 							if (!filePath.startsWith(config.libraryDir)) {
-								return Promise.reject(
-									'Path is not under the library dir!',
-								);
+								return Promise.reject('Path is not under the library dir!');
 							}
 							return rm(filePath, {
 								force: false,
@@ -216,24 +202,20 @@ export const ExtractPlatformContentController: RequestHandler<
 					),
 				)
 				.catch((err) =>
-					errorOutcome(
-						{
-							message:
-								'Content item extraction post-import cleanup failed.',
-							context: {
-								files: cleanup.files,
-							},
-							caughtException: err,
+					newError({
+						log: 'error',
+						message: 'Content item extraction post-import cleanup failed.',
+						context: {
+							files: cleanup.files,
 						},
-						logger.error.bind(logger),
-					),
+						caughtException: err,
+					}),
 				)
 				.then(() => {});
 		}
 		promises.push(p);
 	};
-	const onContentItemExtractionFailed: ContentItemExtractionCallback =
-		() => {};
+	const onContentItemExtractionFailed: ContentItemExtractionCallback = () => {};
 
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 	return extractor(params as any, extractorOptions as any, context, {
@@ -242,30 +224,22 @@ export const ExtractPlatformContentController: RequestHandler<
 	})
 		.then((resultOrUndefined) => {
 			const promiseCount = promises.length;
-			if (
-				typeof resultOrUndefined === 'undefined' ||
-				promiseCount !== 0
-			) {
+			if (typeof resultOrUndefined === 'undefined' || promiseCount !== 0) {
 				logger.info({
 					message: 'Content extraction complete',
 					context: {
 						extractionParams: params,
 					},
 				});
-				if (
-					promiseCount !== 0 &&
-					typeof resultOrUndefined !== 'undefined'
-				) {
-					errorOutcome(
-						{
-							message:
-								'Content extractor has used callbacks, but has still returned a result that is not undefined. Ignoring the returned result.',
-							context: {
-								numberOfPromisesCreated: promises.length,
-							},
+				if (promiseCount !== 0 && typeof resultOrUndefined !== 'undefined') {
+					newError({
+						message:
+							'Content extractor has used callbacks, but has still returned a result that is not undefined. Ignoring the returned result.',
+						log: 'warn',
+						context: {
+							numberOfPromisesCreated: promises.length,
 						},
-						logger.warn.bind(logger),
-					);
+					});
 				}
 				return Promise.all(promises);
 			}
@@ -279,9 +253,7 @@ export const ExtractPlatformContentController: RequestHandler<
 			return sequentialAsync(importCallback, extractedContent, true);
 		})
 		.then((results) => {
-			const successes = results.filter(
-				(v): v is number => typeof v === 'number',
-			);
+			const successes = results.filter((v): v is number => typeof v === 'number');
 
 			logger.info({
 				message: `Successfully extracted and imported ${successes.length} items.`,

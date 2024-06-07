@@ -1,5 +1,5 @@
+import { newError } from 'exitus';
 import { JSDOM } from 'jsdom';
-import { errorOutcome } from './outcomes.js';
 
 export interface FetchedWebsiteAboutData {
 	openGraphImage: string | null;
@@ -10,34 +10,24 @@ export interface FetchedWebsiteAboutData {
 	canonical: string | null;
 }
 
-export async function fetchWebsiteAboutData(
-	url: string,
-): Promise<FetchedWebsiteAboutData> {
+export async function fetchWebsiteAboutData(url: string): Promise<FetchedWebsiteAboutData> {
 	return JSDOM.fromURL(url)
 		.then((dom) => {
 			const head = dom.window.document.head;
 			const openGraphImage =
-				head
-					.querySelector('meta[property="og:image"][content]')
-					?.getAttribute('content') ?? null;
+				head.querySelector('meta[property="og:image"][content]')?.getAttribute('content') ??
+				null;
 			const openGraphTitle =
-				head
-					.querySelector('meta[property="og:title"]')
-					?.getAttribute('content') ?? null;
+				head.querySelector('meta[property="og:title"]')?.getAttribute('content') ?? null;
 			const openGraphSiteName =
-				head
-					.querySelector('meta[property="og:site_name"]')
-					?.getAttribute('content') ?? null;
+				head.querySelector('meta[property="og:site_name"]')?.getAttribute('content') ??
+				null;
 			const description =
-				head
-					.querySelector('meta[name="description"][content]')
-					?.getAttribute('content') ?? null;
-			const siteTitle =
-				head.getElementsByTagName('title')[0]?.innerText ?? null;
+				head.querySelector('meta[name="description"][content]')?.getAttribute('content') ??
+				null;
+			const siteTitle = head.getElementsByTagName('title')[0]?.innerText ?? null;
 			const canonical =
-				head
-					.querySelector('link[rel="canonical"]')
-					?.getAttribute('href') ?? null;
+				head.querySelector('link[rel="canonical"]')?.getAttribute('href') ?? null;
 
 			return {
 				openGraphImage,
@@ -50,9 +40,10 @@ export async function fetchWebsiteAboutData(
 		})
 		.catch((err: unknown) =>
 			Promise.reject(
-				errorOutcome({
+				newError({
 					message: 'Unhandled exception fetching website about data.',
 					caughtException: err,
+					log: 'error',
 				}),
 			),
 		);

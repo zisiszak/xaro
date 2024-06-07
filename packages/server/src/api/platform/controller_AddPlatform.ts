@@ -1,10 +1,7 @@
 import { cleanString } from '@xaro/utils';
+import { exitus } from 'exitus';
 import { RequestHandler } from 'express';
-import {
-	getPlatformNameFromId,
-	linkUserToPlatform,
-} from '~/data/access/platform.js';
-import { errorOutcome, isErrorOutcome } from '~/exports.js';
+import { getPlatformNameFromId, linkUserToPlatform } from '~/data/access/platform.js';
 import { logger } from '~/index.js';
 import { addUnidentifiedPlatform } from '~/services/platform/auto-platform.js';
 import { matchUrlToPlatformId } from '~/services/platform/match-url-to-platform.js';
@@ -23,11 +20,7 @@ export interface Success {
 export type Failure = undefined;
 export type Result = Success | Failure;
 
-export const AddPlatformController: RequestHandler<
-	never,
-	Result,
-	Body
-> = async (req, res) => {
+export const AddPlatformController: RequestHandler<never, Result, Body> = async (req, res) => {
 	const { id: userId } = req.forwarded.user!;
 
 	if (req.body.addFromUrl) {
@@ -48,19 +41,18 @@ export const AddPlatformController: RequestHandler<
 					inputUrl: addFromUrl,
 					userId: userId,
 				}).catch((err) => {
-					if (!isErrorOutcome(err)) {
-						logger.error(
-							errorOutcome({
-								message:
-									'Unexpected error adding unidentified platform.',
-								caughtException: err,
-								context: {
-									addFromUrl,
-									userId,
-								},
-							}),
-						);
-					}
+					logger.error(
+						exitus.isError(err)
+							? err
+							: exitus.newError({
+									message: 'Unexpected error adding unidentified platform.',
+									caughtException: err,
+									context: {
+										addFromUrl,
+										userId,
+									},
+								}),
+					);
 
 					return undefined;
 				});
@@ -75,7 +67,7 @@ export const AddPlatformController: RequestHandler<
 				const userIsLinked = await linkUserToPlatform({
 					userId,
 					platformId,
-				}).then((result) => !isErrorOutcome(result));
+				}).then((result) => !exitus.isError(result));
 
 				res.status(200).json({
 					created,

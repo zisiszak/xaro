@@ -1,7 +1,6 @@
+import { newError } from 'exitus';
 import { addPlatformCommunityIfNotExists } from '~/data/access/platform-community.js';
 import { getPlatformDirs } from '~/data/access/platform.js';
-import { logger } from '~/index.js';
-import { errorOutcome } from '~/utils/outcomes.js';
 import { downloadPlatformAssets } from './download-platform-assets.js';
 import { extractPlatformCommunityMetadata } from './extract-metadata.js';
 
@@ -49,21 +48,16 @@ export async function extractAndAddPlatformCommunityIfNotExists({
 								});
 							})
 							.catch((err) =>
-								errorOutcome(
-									{
-										message:
-											'Unexpected error downloading platform assets',
-										caughtException: err,
-										context: {
-											platformCommunitySourceId:
-												data.sourceId,
-											downloadableAssets:
-												data.downloadableAssets,
-											platformId: linkedPlatformId,
-										},
+								newError({
+									message: 'Unexpected error downloading platform assets',
+									caughtException: err,
+									context: {
+										platformCommunitySourceId: data.sourceId,
+										downloadableAssets: data.downloadableAssets,
+										platformId: linkedPlatformId,
 									},
-									logger.error,
-								),
+									log: 'error',
+								}),
 							);
 					}
 

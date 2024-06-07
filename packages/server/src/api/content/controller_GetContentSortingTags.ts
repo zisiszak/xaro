@@ -1,6 +1,6 @@
+import { exitus } from 'exitus';
 import { RequestHandler } from 'express';
 import { SqlBool, sql } from 'kysely';
-import { errorOutcome } from '~/exports.js';
 import { db, logger } from '~/index.js';
 import { ContentFiltering, parseContentFiltering } from './shared.js';
 
@@ -235,7 +235,7 @@ export const GetContentSortingTagsController: RequestHandler<
 		})
 		.catch((err) => {
 			logger.error(
-				errorOutcome({
+				exitus.newError({
 					message: 'Failed to get content sorting tags.',
 					caughtException: err,
 				}),

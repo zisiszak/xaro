@@ -1,14 +1,9 @@
+import { GenericError, isError, newError } from 'exitus';
 import type Ffmpeg from 'fluent-ffmpeg';
 import path from 'path';
 import { logger } from '~/index.js';
 import { videoExtensions } from '../../../data/model/shared/content-kinds.js';
 import { sequentialAsync } from '../../../utils/async/sequential-async.js';
-import {
-	ErrorOutcome,
-	GENERIC_ERROR,
-	errorOutcome,
-	isErrorOutcome,
-} from '../../../utils/outcomes.js';
 import { type DeepFreeze } from '../../../utils/types-and-guards/index.js';
 import { useFfmpeg } from '../use-ffmpeg.js';
 import { parsePropsFactory, type ThumbnailConfig } from './parse-props.js';
@@ -36,12 +31,10 @@ export async function generateThumbnails({
 	outputDir,
 	thumbnails,
 }: DeepFreeze<GenerateThumbnailsProps>): Promise<GeneratedThumbnail[]> {
-	const extension = path.extname(
-		filePath,
-	) as (typeof supportedExtensions)[number];
+	const extension = path.extname(filePath) as (typeof supportedExtensions)[number];
 	if (!supportedExtensions.includes(extension)) {
 		return Promise.reject(
-			errorOutcome({
+			newError({
 				message: 'Unsupported file type',
 				context: {
 					filePath: filePath,
@@ -66,22 +59,17 @@ export async function generateThumbnails({
 			timestamps && (props.timestamps = timestamps);
 			count && (props.count = count);
 
-			return new Promise<GeneratedThumbnail | ErrorOutcome>((resolve) => {
+			return new Promise<GeneratedThumbnail | GenericError>((resolve) => {
 				try {
 					ffmpeg
 						.input(filePath)
 						.screenshot(props)
 						.on('end', () => {
 							const f = filename + '.png';
-							const parsedFileIndex = filename.match(
-								NUMBER_AFTER_UNDERSCORE,
-							);
+							const parsedFileIndex = filename.match(NUMBER_AFTER_UNDERSCORE);
 							const parsedTimestamp =
-								parsedFileIndex !== null &&
-								parsedFileIndex.length > 0
-									? timestamps?.[
-											parseInt(parsedFileIndex[0])
-										]?.toString() ?? null
+								parsedFileIndex !== null && parsedFileIndex.length > 0
+									? timestamps?.[parseInt(parsedFileIndex[0])]?.toString() ?? null
 									: null;
 
 							resolve({
@@ -92,9 +80,8 @@ export async function generateThumbnails({
 							});
 						});
 				} catch (error) {
-					const outcome = errorOutcome({
-						message:
-							'Unexpected error while attempting screenshot via ffmpeg.',
+					const outcome = newError({
+						message: 'Unexpected error while attempting screenshot via ffmpeg.',
 						context: {
 							fileName: filename,
 							size,
@@ -111,10 +98,5 @@ export async function generateThumbnails({
 		},
 		configs,
 		true,
-	).then((results) =>
-		results.filter(
-			<T>(v: T | ErrorOutcome<GENERIC_ERROR>): v is T =>
-				!isErrorOutcome(v),
-		),
-	);
+	).then((results) => results.filter(<T>(v: T | GenericError): v is T => !isError(v)));
 }

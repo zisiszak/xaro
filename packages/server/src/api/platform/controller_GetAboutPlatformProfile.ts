@@ -1,7 +1,7 @@
 import { cleanInt } from '@xaro/utils';
+import { exitus } from 'exitus';
 import { type RequestHandler } from 'express';
 import { getPlatformNameFromId } from '~/data/access/platform.js';
-import { errorOutcome } from '~/exports.js';
 import { type PlatformProfile } from '../../data/model/tables/index.js';
 import { db, logger } from '../../index.js';
 import { selectFirst } from '../../libs/kysely/index.js';
@@ -17,10 +17,10 @@ export type Params = {
 	profileId: string;
 };
 
-export const GetAboutPlatformProfileController: RequestHandler<
-	Params,
-	Result
-> = async (req, res) => {
+export const GetAboutPlatformProfileController: RequestHandler<Params, Result> = async (
+	req,
+	res,
+) => {
 	const platformProfileId = cleanInt(req.params.profileId);
 	if (typeof platformProfileId === 'undefined') {
 		return res.status(400).end();
@@ -36,14 +36,8 @@ export const GetAboutPlatformProfileController: RequestHandler<
 					'PlatformProfile.id',
 					'UserLinkedPlatformProfile.linkedPlatformProfileId',
 				)
-				.select(
-					'UserLinkedPlatformProfile.linkedPlatformProfileId as id',
-				)
-				.where(
-					'UserLinkedPlatformProfile.linkedUserId',
-					'=',
-					req.forwarded.user!.id,
-				),
+				.select('UserLinkedPlatformProfile.linkedPlatformProfileId as id')
+				.where('UserLinkedPlatformProfile.linkedUserId', '=', req.forwarded.user!.id),
 		)
 		.innerJoin(
 			'PlatformLinkedContent',
@@ -71,17 +65,15 @@ export const GetAboutPlatformProfileController: RequestHandler<
 				platformProfile.linkedPlatformId,
 			).catch(() => null);
 			if (platformName === null) {
-				errorOutcome(
-					{
-						message:
-							'Failed to resolve platform name from platformId that was assigned to a platform profile.',
-						context: {
-							platformProfileId: platformProfile.id,
-							linkedPlatformId: platformProfile.linkedPlatformId,
-						},
+				exitus.newError({
+					message:
+						'Failed to resolve platform name from platformId that was assigned to a platform profile.',
+					context: {
+						platformProfileId: platformProfile.id,
+						linkedPlatformId: platformProfile.linkedPlatformId,
 					},
-					logger.error,
-				);
+					log: 'error',
+				});
 				return res.status(500).end();
 			}
 

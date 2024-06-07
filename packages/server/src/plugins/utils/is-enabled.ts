@@ -1,5 +1,5 @@
+import { newError } from 'exitus';
 import { db } from '../../index.js';
-import { errorOutcome } from '../../utils/outcomes.js';
 
 export async function isPluginEnabled(plugin: string): Promise<boolean> {
 	return db
@@ -10,8 +10,9 @@ export async function isPluginEnabled(plugin: string): Promise<boolean> {
 		.then((result) => {
 			if (!result) {
 				return Promise.reject(
-					errorOutcome({
+					newError({
 						message: 'Plugin name not found in database.',
+						log: 'error',
 						context: {
 							plugin: plugin,
 						},
@@ -26,8 +27,9 @@ export async function isPluginEnabled(plugin: string): Promise<boolean> {
 export async function throwIfPluginNotEnabled(plugin: string): Promise<void> {
 	if (!(await isPluginEnabled(plugin))) {
 		return Promise.reject(
-			errorOutcome({
+			newError({
 				message: 'Plugin is not enabled.',
+				log: 'error',
 				context: {
 					plugin: plugin,
 				},

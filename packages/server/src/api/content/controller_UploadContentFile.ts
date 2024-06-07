@@ -1,9 +1,9 @@
+import { exitus } from 'exitus';
 import { type RequestHandler } from 'express';
 import formidable from 'formidable';
 import path from 'path';
 import { config, db, logger } from '../../index.js';
 import { importUploadedContent } from '../../services/content/uploads/import-uploaded-media.js';
-import { ERROR, errorOutcome, isErrorOutcome } from '../../utils/outcomes.js';
 
 export type Params = {
 	clientFileHash: string;
@@ -41,7 +41,7 @@ export const UploadContentFileController: RequestHandler<Params> = async (
 				if (!result) {
 					res.status(404).end();
 					return Promise.reject(
-						errorOutcome({
+						exitus.newError({
 							message:
 								'Registered upload item not found in database.',
 							context: {
@@ -71,7 +71,7 @@ export const UploadContentFileController: RequestHandler<Params> = async (
 				if (!files.media || !files.media[0]) {
 					res.status(400).end();
 					return Promise.reject(
-						errorOutcome(
+						exitus.newError(
 							{
 								message:
 									'No uploaded files found in media property.',
@@ -81,7 +81,6 @@ export const UploadContentFileController: RequestHandler<Params> = async (
 									files,
 								},
 							},
-							logger.warn,
 						),
 					);
 				}
@@ -91,7 +90,7 @@ export const UploadContentFileController: RequestHandler<Params> = async (
 				if (hash !== clientFileHash) {
 					res.status(400).end();
 					return Promise.reject(
-						errorOutcome(
+						exitus.newError(
 							{
 								message:
 									'Client file hash does not match uploaded file hash.',
@@ -105,7 +104,6 @@ export const UploadContentFileController: RequestHandler<Params> = async (
 									size,
 								},
 							},
-							logger.warn,
 						),
 					);
 				}
@@ -113,9 +111,9 @@ export const UploadContentFileController: RequestHandler<Params> = async (
 				if (filepath !== absoluteDestinationFilePath) {
 					res.status(500).end();
 					return Promise.reject(
-						errorOutcome(
-							ERROR.UNEXPECTED,
+						exitus.newError(
 							{
+								kind: exitus.errorKind.unexpected,
 								message:
 									'Upload filepath does not match destination filepath',
 								context: {
@@ -125,7 +123,6 @@ export const UploadContentFileController: RequestHandler<Params> = async (
 									clientFileHash,
 								},
 							},
-							logger.error,
 						),
 					);
 				}
@@ -143,17 +140,16 @@ export const UploadContentFileController: RequestHandler<Params> = async (
 				res.status(200).end();
 			})
 			.catch((err: unknown) => {
-				if (isErrorOutcome(err)) {
-					return;
-				}
-				errorOutcome(ERROR.UNKNOWN, {
-					message: 'Unhandled exception',
-					caughtException: err,
-					context: {
-						userId,
-						clientFileHash,
-					},
-				});
+				logger.error(exitus.isError(err) ? err :
+			exitus.newError({
+				kind: exitus.errorKind.unknown,message: 'Unhandled exception',
+				caughtException: err,
+				context: {
+					userId,
+					clientFileHash,
+				},
+			})
+			);
 				return res.status(500).end();
 			})
 	);

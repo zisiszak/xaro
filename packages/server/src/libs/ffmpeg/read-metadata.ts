@@ -1,5 +1,5 @@
+import { newError } from 'exitus';
 import { type FfprobeData } from 'fluent-ffmpeg';
-import { errorOutcome } from '../../utils/outcomes.js';
 import { useFfmpeg } from './use-ffmpeg.js';
 
 export async function readMetadata(path: string) {
@@ -8,9 +8,10 @@ export async function readMetadata(path: string) {
 			useFfmpeg(path).ffprobe((err: unknown, metadata) => {
 				if (err) {
 					return reject(
-						errorOutcome({
+						newError({
 							message: 'Ffprobe failed.',
 							caughtException: err,
+							log: 'error',
 							context: {
 								filePath: path,
 							},
@@ -22,9 +23,10 @@ export async function readMetadata(path: string) {
 			});
 		} catch (err) {
 			return Promise.reject(
-				errorOutcome({
+				newError({
 					caughtException: err,
 					message: 'Ffmpeg call error.',
+					log: 'error',
 					context: {
 						filePath: path,
 					},

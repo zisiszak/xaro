@@ -1,12 +1,6 @@
 import { createHash } from 'crypto';
+import { errorKind, isError, newError } from 'exitus';
 import fs from 'fs';
-import {
-	FS_ERROR,
-	UNKNOWN_ERROR,
-	errorOutcome,
-	isErrorOutcome,
-} from '../outcomes.js';
-
 /**
  * Hashes a file using SHA1. Supports file sizes greater than 4GiB unlike a more simple `fs.readFile` approach.
  *
@@ -19,8 +13,10 @@ export async function hashFile(path: fs.PathLike) {
 		const readStream = fs.createReadStream(path);
 		readStream.on('error', (err) => {
 			reject(
-				errorOutcome(FS_ERROR, {
+				newError({
+					kind: errorKind.fs,
 					message: 'File ReadStream error.',
+					log: 'error',
 					caughtException: err,
 					context: {
 						filePath: path,
@@ -35,10 +31,12 @@ export async function hashFile(path: fs.PathLike) {
 		});
 	}).catch((err: unknown) =>
 		Promise.reject(
-			isErrorOutcome(err)
+			isError(err)
 				? err
-				: errorOutcome(UNKNOWN_ERROR, {
+				: newError({
+						kind: errorKind.unknown,
 						caughtException: err,
+						log: 'error',
 						message: 'Unknown error',
 					}),
 		),

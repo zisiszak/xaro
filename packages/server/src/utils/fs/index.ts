@@ -1,7 +1,7 @@
+import { GenericError, errorKind, isError, newError } from 'exitus';
 import fs from 'fs';
 import { Guard, is } from 'is-guard';
 import path from 'path';
-import { FS_ERROR, GenericError, errorOutcome, isErrorOutcome } from '../outcomes.js';
 
 export * from './get-filename-info.js';
 export * from './get-matching-files.js';
@@ -58,9 +58,7 @@ export const readFilenames = async (dir: string) => {
 	if ((await isDir(dir)) !== true) {
 		return null;
 	}
-	const dirents = await fs.promises
-		.readdir(dir, { withFileTypes: true })
-		.catch(() => null);
+	const dirents = await fs.promises.readdir(dir, { withFileTypes: true }).catch(() => null);
 	if (dirents === null) {
 		return null;
 	}
@@ -79,43 +77,41 @@ export const readFilteredFilenames = async (
 
 export async function readDirnames(dir: string) {
 	return isDir(dir)
-		.then<
-			| GenericError
-			| fs.Dirent[]
-		>((isDir) => {
+		.then<GenericError | fs.Dirent[]>((isDir) => {
 			if (isDir === false) {
-				return errorOutcome({
-					message: "Path is file.",
+				return newError({
+					message: 'Path is file.',
 					context: {
 						path: dir,
-					}
+					},
 				});
 			}
 			if (isDir === undefined) {
-				return errorOutcome({
-					message: "Path not found.",
+				return newError({
+					message: 'Path not found.',
 					context: {
 						path: dir,
-					}
-				})
+					},
+				});
 			}
 			return fs.promises.readdir(dir, { withFileTypes: true });
 		})
 		.then((dirents) =>
-			isErrorOutcome(dirents)
+			isError(dirents)
 				? dirents
-				: dirents
-						.filter((dirent) => dirent.isDirectory())
-						.map((dirent) => dirent.name),
+				: dirents.filter((dirent) => dirent.isDirectory()).map((dirent) => dirent.name),
 		)
-		.catch((err) => errorOutcome(
-			{message: "readDirnames unhandled exception",
-			caughtException: err,
-			context: {
-				path: dir,
-			}
-		}
-		));
+		.catch((err) =>
+			newError({
+				kind: errorKind.unexpected,
+				message: 'readDirnames unhandled exception',
+				log: 'error',
+				caughtException: err,
+				context: {
+					path: dir,
+				},
+			}),
+		);
 }
 
 /**
@@ -129,18 +125,18 @@ export async function getFileSize(filepath: string): Promise<number> {
 		.then((stats) => stats.size)
 		.catch((err: unknown) =>
 			Promise.reject(
-				errorOutcome(FS_ERROR, {
+				newError({
+					kind: errorKind.fs,
 					caughtException: err,
-					files: filepath,
+					payload: {
+						file: filepath,
+					},
 				}),
 			),
 		);
 }
 
-export async function readFirstNBytes(
-	filePath: string,
-	numBytes: number,
-): Promise<Buffer> {
+export async function readFirstNBytes(filePath: string, numBytes: number): Promise<Buffer> {
 	const chunks = [];
 	for await (const chunk of fs.createReadStream(filePath, {
 		start: 0,
@@ -164,7 +160,7 @@ export async function readAndParseJSON<O>(
 		.readFile(path, { encoding })
 		.catch((err) =>
 			Promise.reject(
-				errorOutcome({
+				newError({
 					caughtException: err,
 					message: 'Failed to read file',
 					context: {
@@ -175,11 +171,11 @@ export async function readAndParseJSON<O>(
 		)
 		.then(JSON.parse)
 		.catch((err) => {
-			if (isErrorOutcome(err)) {
+			if (isError(err)) {
 				return Promise.reject(err);
 			}
 			return Promise.reject(
-				errorOutcome({
+				newError({
 					message: 'Failed to parse JSON.',
 					caughtException: err,
 					context: {
@@ -191,9 +187,8 @@ export async function readAndParseJSON<O>(
 		.then((result) => {
 			if (!typeguard(result)) {
 				return Promise.reject(
-					errorOutcome({
-						message:
-							'Parsed JSON does not satisfy guard conditions.',
+					newError({
+						message: 'Parsed JSON does not satisfy guard conditions.',
 						context: {
 							path,
 							typeguard: typeguard.name,

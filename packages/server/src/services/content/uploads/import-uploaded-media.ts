@@ -1,22 +1,18 @@
+import { newError } from 'exitus';
 import { contentFileCategoriesMap } from '../../../data/model/shared/content-file-categories.js';
 import { db } from '../../../index.js';
-import { errorOutcome } from '../../../utils/outcomes.js';
 import { importContent } from '../import.js';
 
-export const importUploadedContent = async (contentUploadId: number) =>db
+export const importUploadedContent = async (contentUploadId: number) =>
+	db
 		.selectFrom('ContentUpload')
 		.selectAll()
-		.where((eb) =>
-			eb.and([
-				eb('id', '=', contentUploadId),
-				eb('status', '=', 'COMPLETE'),
-			]),
-		)
+		.where((eb) => eb.and([eb('id', '=', contentUploadId), eb('status', '=', 'COMPLETE')]))
 		.executeTakeFirstOrThrow()
 		.then<void>((result) => {
 			if (result.params.kind === 'thumbnail') {
 				return Promise.reject(
-					errorOutcome({
+					newError({
 						message: 'Thumbnail upload not yet implemented.',
 						context: result,
 					}),
@@ -42,10 +38,8 @@ export const importUploadedContent = async (contentUploadId: number) =>db
 						},
 					},
 					options: {
-						generateDefaultThumbnails:
-							result.params.generateDefaultThumbnails,
-						createOptimisedMedia:
-							result.params.createOptimisedMedia,
+						generateDefaultThumbnails: result.params.generateDefaultThumbnails,
+						createOptimisedMedia: result.params.createOptimisedMedia,
 					},
 				}).then(() =>
 					db

@@ -1,11 +1,10 @@
+import { isError, newError } from 'exitus';
 import path from 'path';
 import { linkUserToPlatformCommunity } from '~/data/access/platform-community.js';
 import { linkUserToPlatformProfile } from '~/data/access/platform-profile.js';
 import { getPlatformDetails } from '~/data/access/platform.js';
 import {
 	contentFileCategoriesMap,
-	errorOutcome,
-	isErrorOutcome,
 	usePluginModule,
 	type ExtractedContent,
 	type PlatformManager,
@@ -15,9 +14,7 @@ import { importContent } from '../content/import.js';
 import { extractAndAddPlatformCommunityIfNotExists } from './platform-community.js';
 import { extractAndAddPlatformProfileIfNotExists } from './platform-profile.js';
 
-export const importExtractedContent = async (
-	extracted: ExtractedContent,
-): Promise<number> => {
+export const importExtractedContent = async (extracted: ExtractedContent): Promise<number> => {
 	const {
 		queuedByUserId,
 		files,
@@ -33,14 +30,10 @@ export const importExtractedContent = async (
 		},
 	} = extracted;
 
-	if (
-		typeof providedPlatformId !== 'number' &&
-		typeof platform !== 'string'
-	) {
+	if (typeof providedPlatformId !== 'number' && typeof platform !== 'string') {
 		return Promise.reject(
-			errorOutcome({
-				message:
-					'Platform or PlatformId must be provided to import extracted content.',
+			newError({
+				message: 'Platform or PlatformId must be provided to import extracted content.',
 				context: {
 					sourceId,
 					platformProfileName,
@@ -52,19 +45,19 @@ export const importExtractedContent = async (
 
 	// TODO: this should be moved to it's own separate function
 
-	const platformDetails = await getPlatformDetails(
-		providedPlatformId ?? platform!,
-	).catch((err) => {
-		return errorOutcome({
-			message: 'Failed to find platform that matched provided params.',
-			context: {
-				providedPlatformName: platform,
-				providedPlatformId: providedPlatformId,
-			},
-			caughtException: err,
-		});
-	});
-	if (isErrorOutcome(platformDetails)) {
+	const platformDetails = await getPlatformDetails(providedPlatformId ?? platform!).catch(
+		(err) => {
+			return newError({
+				message: 'Failed to find platform that matched provided params.',
+				context: {
+					providedPlatformName: platform,
+					providedPlatformId: providedPlatformId,
+				},
+				caughtException: err,
+			});
+		},
+	);
+	if (isError(platformDetails)) {
 		return Promise.reject(platformDetails);
 	}
 
@@ -73,29 +66,23 @@ export const importExtractedContent = async (
 	const mainFile = files?.find((file) => file.kind === 'main');
 	const thumbFile = files?.find((file) => file.kind === 'thumbnail');
 
-	let existingContent: { sourceId: null | string; id: number } | undefined =
-		undefined;
+	let existingContent: { sourceId: null | string; id: number } | undefined = undefined;
 	if (typeof platformId === 'number' || platform) {
 		existingContent = await db
 			.selectFrom('PlatformLinkedContent')
 			.select(['id', 'sourceId'])
 			.where((eb) =>
-				eb.and([
-					eb('linkedPlatformId', '=', platformId),
-					eb('sourceId', '=', sourceId),
-				]),
+				eb.and([eb('linkedPlatformId', '=', platformId), eb('sourceId', '=', sourceId)]),
 			)
 			.executeTakeFirst();
 	}
 
-	if (
-		typeof existingContent === 'undefined' &&
-		typeof mainFile === 'undefined'
-	) {
+	if (typeof existingContent === 'undefined' && typeof mainFile === 'undefined') {
 		return Promise.reject(
-			errorOutcome({
+			newError({
 				message:
 					"Original content file must already be present in database if importing extracted content without any 'main' files.",
+				log: 'error',
 			}),
 		);
 	}
@@ -144,8 +131,7 @@ export const importExtractedContent = async (
 				.execute()
 				.then(() => {
 					logger.info({
-						message:
-							'Metadata successfully updated for PlatformLinkedMedia.',
+						message: 'Metadata successfully updated for PlatformLinkedMedia.',
 						context: { platformLinkedMediaId: existingContent!.id },
 					});
 					return existingContent!.id;
@@ -170,8 +156,8 @@ export const importExtractedContent = async (
 		})
 			.catch(() =>
 				platformManager
-					? usePluginModule<PlatformManager>(platformManager)
-							?.defaultItems.platformProfileId ?? undefined
+					? usePluginModule<PlatformManager>(platformManager)?.defaultItems
+							.platformProfileId ?? undefined
 					: undefined,
 			)
 			.then(async (id) => {
@@ -256,4 +242,4 @@ export const importExtractedContent = async (
 			},
 		},
 	});
-}
+};

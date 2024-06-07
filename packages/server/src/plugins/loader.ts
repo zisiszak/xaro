@@ -1,5 +1,5 @@
 import { mkdirDefaults } from '@utils/fs/index.js';
-import { errorOutcome } from '@utils/outcomes.js';
+import { newError } from 'exitus';
 import path from 'path';
 import { type Database } from '~/data/model/database.js';
 import { config, logger } from '~/index.js';
@@ -29,15 +29,10 @@ const pluginNameToId: Map<string, unknown> = new Map();
 /**
  * Key: `${plugin.name}.${module.name}`
  */
-const pluginModuleReferenceToPluginModule: Map<
-	PluginModuleReference,
-	AnyPluginModule
-> = new Map();
+const pluginModuleReferenceToPluginModule: Map<PluginModuleReference, AnyPluginModule> = new Map();
 
-const pluginModuleKindToPluginModuleReferences: Map<
-	PluginModuleKind,
-	PluginModuleReference[]
-> = new Map();
+const pluginModuleKindToPluginModuleReferences: Map<PluginModuleKind, PluginModuleReference[]> =
+	new Map();
 
 export type LoadedModuleType = {
 	[K in PluginModuleKind]: {
@@ -58,7 +53,7 @@ export async function loadPlugin(
 	let previousVersion: string | null = null;
 
 	if (pluginManifest.name.includes('.')) {
-		const outcome = errorOutcome({
+		const outcome = newError({
 			message: 'Plugin name cannot contain a "."',
 			context: {
 				name: pluginManifest.name,
@@ -98,14 +93,14 @@ export async function loadPlugin(
 				.then((result) => Number(result.insertId)),
 		);
 	if (pluginId === null) {
-		const outcome = errorOutcome({
+		const outcome = newError({
 			context: {
 				plugin: pluginManifest.name,
 				displayName: pluginManifest.displayName,
 			},
+			log: 'warn',
 			message: 'Plugin disabled. Skipping...',
 		});
-		logger.warn(outcome);
 		return Promise.reject(outcome);
 	}
 
@@ -125,30 +120,25 @@ export async function loadPlugin(
 			return true;
 		}
 		if (moduleManifest.name.includes('.')) {
-			invalidModuleManifestReason =
-				'Plugin module name cannot contain a "."';
+			invalidModuleManifestReason = 'Plugin module name cannot contain a "."';
 			return true;
 		}
 		return false;
 	});
 	if (invalidModuleManifest) {
-		const outcome = errorOutcome({
+		const outcome = newError({
 			message: invalidModuleManifestReason!,
 			context: {
 				moduleManifest: invalidModuleManifest,
 				plugin: pluginManifest.name,
 			},
+			log: 'error',
 		});
-		logger.error(outcome);
 		return Promise.reject(outcome);
 	}
 
 	// Create the plugin directory
-	const pluginDir = path.join(
-		config.libraryDir,
-		'plugins',
-		pluginManifest.name,
-	);
+	const pluginDir = path.join(config.libraryDir, 'plugins', pluginManifest.name);
 	await mkdirDefaults(pluginDir);
 
 	// Create the logger functions
@@ -159,9 +149,7 @@ export async function loadPlugin(
 	const optionalModulesThatFailedToLoad: string[] = [];
 	let requiredModuleFailedToLoad = false;
 	let pluginModulesPromise: Promise<null | void> = Promise.resolve();
-	const pluginModuleLoader: PluginModuleLoaderCallback = <
-		Kind extends PluginModuleKind,
-	>(
+	const pluginModuleLoader: PluginModuleLoaderCallback = <Kind extends PluginModuleKind>(
 		module: MappedPluginModuleConfig<Kind>,
 	) => {
 		logger.info({
@@ -174,7 +162,7 @@ export async function loadPlugin(
 		});
 		pluginModulesPromise = pluginModulesPromise.then(async () => {
 			if (requiredModuleFailedToLoad) {
-				const outcome = errorOutcome({
+				const outcome = newError({
 					message:
 						'Required module failed to load, but next module load was still attempted.',
 					context: {
@@ -189,15 +177,13 @@ export async function loadPlugin(
 
 			const matchingManifest = moduleManifests.find(
 				(moduleManifest) =>
-					moduleManifest.kind === module.kind &&
-					moduleManifest.name === module.name,
+					moduleManifest.kind === module.kind && moduleManifest.name === module.name,
 			) as undefined | PluginModuleManifest<typeof module.kind>;
 
 			if (!matchingManifest) {
 				requiredModuleFailedToLoad = true;
-				const outcome = errorOutcome({
-					message:
-						'No matching module manifest found for attempted module load',
+				const outcome = newError({
+					message: 'No matching module manifest found for attempted module load',
 					context: {
 						module: module.name,
 						moduleKind: module.kind,
@@ -208,15 +194,11 @@ export async function loadPlugin(
 				logger.error(outcome);
 				return Promise.reject(outcome);
 			}
-			const {
-				description = null,
-				optional = false,
-				displayName,
-			} = matchingManifest;
+			const { description = null, optional = false, displayName } = matchingManifest;
 
 			const handler = pluginModuleHandlers[module.kind];
 			if (handler === null) {
-				const outcome = errorOutcome({
+				const outcome = newError({
 					message: 'Plugin module kind not yet implemented.',
 					context: {
 						moduleKind: module.kind,
@@ -270,7 +252,7 @@ export async function loadPlugin(
 		onStart(pluginStartParams);
 		await pluginModulesPromise;
 	} catch (err) {
-		const outcome = errorOutcome({
+		const outcome = newError({
 			message: 'Plugin failed to start after being initialised.',
 			caughtException: err,
 			context: {
@@ -283,17 +265,10 @@ export async function loadPlugin(
 
 	loadedModules.map(({ name, module: loadedModule }) => {
 		const moduleReference = `${pluginManifest.name}.${name}` as const;
-		pluginModuleReferenceToPluginModule.set(
-			moduleReference,
-			loadedModule as AnyPluginModule,
-		);
-		const kindArray = pluginModuleKindToPluginModuleReferences.get(
-			loadedModule.kind,
-		);
+		pluginModuleReferenceToPluginModule.set(moduleReference, loadedModule as AnyPluginModule);
+		const kindArray = pluginModuleKindToPluginModuleReferences.get(loadedModule.kind);
 		if (!kindArray) {
-			pluginModuleKindToPluginModuleReferences.set(loadedModule.kind, [
-				moduleReference,
-			]);
+			pluginModuleKindToPluginModuleReferences.set(loadedModule.kind, [moduleReference]);
 		} else {
 			kindArray.push(moduleReference);
 		}
@@ -352,10 +327,7 @@ export function usePlugin<Manifest extends PluginManifest>(
 	return Object.fromEntries(
 		Array.from(pluginModuleReferenceToPluginModule)
 			.filter(([name]) => name.startsWith(`${pluginName}.`))
-			.map(([key, module]) => [
-				key.slice(pluginName!.length + 1),
-				module,
-			]),
+			.map(([key, module]) => [key.slice(pluginName!.length + 1), module]),
 	) as MappedPluginModules<Manifest>;
 }
 
@@ -363,9 +335,8 @@ export function usePluginModule<
 	Module extends PluginModule<any> = MappedPluginModule<PluginModuleKind>,
 >(pluginModuleReference: PluginModuleReference): Module | null {
 	return (
-		(pluginModuleReferenceToPluginModule.get(pluginModuleReference) as
-			| Module
-			| undefined) ?? null
+		(pluginModuleReferenceToPluginModule.get(pluginModuleReference) as Module | undefined) ??
+		null
 	);
 }
 

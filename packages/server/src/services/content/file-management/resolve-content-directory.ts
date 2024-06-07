@@ -1,13 +1,10 @@
 // 100 media ids per directory, with every directory being generated from the Math.floor(media id / 100)
+import { errorKind, newError } from 'exitus';
 import { access } from 'fs/promises';
 import path from 'path';
-import {
-	contentFileCategoriesMap,
-	type ContentFileCategory,
-} from '../../../exports.js';
+import { contentFileCategoriesMap, type ContentFileCategory } from '../../../exports.js';
 import { config } from '../../../index.js';
 import { mkdirDefaults } from '../../../utils/fs/index.js';
-import { FS_ERROR, errorOutcome } from '../../../utils/outcomes.js';
 
 export const MAX_UNIQUE_MEDIA_IDS_PER_DIR = 100;
 
@@ -21,7 +18,7 @@ export interface ResolveContentFileDirectoryProps {
 /**
  * Resolves the directory that a media file should be placed in. If the directory does not exist yet, it creates it.
  *
- * @returns The absolute path to the media directory, or {@link ERR_UNEXPECTED} if the media directory couldn't be created/accessed.
+ * @returns The absolute path to the media directory, or an Exitus Error if the media directory couldn't be created/accessed.
  *
  * @see {@link MAX_UNIQUE_MEDIA_IDS_PER_DIR}
  */
@@ -60,11 +57,15 @@ export const resolveContentFileDirectory = async ({
 		.then(() => result)
 		.catch((err) => {
 			return Promise.reject(
-				errorOutcome(FS_ERROR, {
+				newError({
+					kind: errorKind.fs,
 					caughtException: err,
 					message:
 						'An unexpected error occured while trying to resolve a content file directory.',
-					files: result,
+					payload: {
+						file: result,
+					},
+					log: 'error',
 					context: {
 						contentId,
 						contentFileCategory,
@@ -72,4 +73,4 @@ export const resolveContentFileDirectory = async ({
 				}),
 			);
 		});
-}
+};

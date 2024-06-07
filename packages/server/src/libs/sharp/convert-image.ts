@@ -1,6 +1,6 @@
+import { newError } from 'exitus';
 import path from 'path';
 import sharp, { type OutputInfo } from 'sharp';
-import { errorOutcome } from '~/exports.js';
 import { trueBasename } from '~/utils/fs/index.js';
 import {
 	parseAvifFormatOptions,
@@ -9,11 +9,7 @@ import {
 	parsePngFormatOptions,
 	parseWebpFormatOptions,
 } from './internal.js';
-import {
-	type FormatOptions,
-	type OutputFormat,
-	type OutputOptions,
-} from './types.js';
+import { type FormatOptions, type OutputFormat, type OutputOptions } from './types.js';
 
 export type ConvertImageProps<Format extends OutputFormat> = {
 	inputPath: string;
@@ -24,23 +20,19 @@ export type ConvertImageProps<Format extends OutputFormat> = {
 	};
 } & OutputOptions;
 
-export const convertImage = async <
-	Format extends OutputFormat,
-	Output extends OutputOptions,
->({
+export const convertImage = async <Format extends OutputFormat, Output extends OutputOptions>({
 	inputPath: inputFilePath,
 	outputDir,
 	outputFilename,
 	formatOptions,
 	toBuffer,
 	resize,
-}: ConvertImageProps<Format>): Promise<
-	Output['toBuffer'] extends true ? Buffer : OutputInfo
-> => {
+}: ConvertImageProps<Format>): Promise<Output['toBuffer'] extends true ? Buffer : OutputInfo> => {
 	if ((!toBuffer && !outputDir) || !outputFilename) {
-		throw errorOutcome({
+		throw newError({
 			message:
 				'Output filename and directory are both required when not outputting to a Buffer.',
+			log: 'error',
 			context: {
 				inputPath: inputFilePath,
 			},
@@ -67,9 +59,7 @@ export const convertImage = async <
 		}
 
 		case '.gif': {
-			const { reuse } = parseGifFormatOptions(
-				formatOptions as FormatOptions<'.gif'>,
-			);
+			const { reuse } = parseGifFormatOptions(formatOptions as FormatOptions<'.gif'>);
 			command = command.gif({
 				reuse,
 			});
@@ -87,8 +77,9 @@ export const convertImage = async <
 			break;
 		}
 		case '.webp': {
-			const { quality, smartSubsample, lossless, nearLossless } =
-				parseWebpFormatOptions(formatOptions as FormatOptions<'.webp'>);
+			const { quality, smartSubsample, lossless, nearLossless } = parseWebpFormatOptions(
+				formatOptions as FormatOptions<'.webp'>,
+			);
 			command = command.webp({
 				quality,
 				smartSubsample,
@@ -99,9 +90,7 @@ export const convertImage = async <
 		}
 
 		case '.avif': {
-			const { quality } = parseAvifFormatOptions(
-				formatOptions as FormatOptions<'.avif'>,
-			);
+			const { quality } = parseAvifFormatOptions(formatOptions as FormatOptions<'.avif'>);
 			command = command.avif({
 				quality,
 			});
@@ -109,16 +98,18 @@ export const convertImage = async <
 		}
 
 		case '.heif':
-			throw errorOutcome({
+			throw newError({
 				message: 'Output format selected has not yet been implemented.',
+				log: 'error',
 				context: {
 					outputFormat: formatOptions.format,
 					inputFilePath,
 				},
 			});
 		default:
-			throw errorOutcome({
+			throw newError({
 				message: 'Unsupported output format.',
+				log: 'warn',
 				context: {
 					outputFormat: formatOptions.format,
 					inputFilePath,
@@ -130,10 +121,7 @@ export const convertImage = async <
 		toBuffer
 			? command.toBuffer()
 			: command.toFile(
-					path.join(
-						outputDir,
-						trueBasename(outputFilename) + formatOptions.format,
-					),
+					path.join(outputDir, trueBasename(outputFilename) + formatOptions.format),
 				)
 	) as Promise<Output['toBuffer'] extends true ? Buffer : OutputInfo>;
 };

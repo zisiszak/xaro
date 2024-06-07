@@ -1,12 +1,8 @@
 import arg from 'arg';
 import SQLite from 'better-sqlite3';
+import { exitus, isError } from 'exitus';
 import { access, writeFile } from 'fs/promises';
-import {
-	Kysely,
-	SqliteDialect,
-	type InsertResult,
-	type LogEvent,
-} from 'kysely';
+import { Kysely, SqliteDialect, type InsertResult, type LogEvent } from 'kysely';
 import path from 'path';
 import { pino, type Logger, type TransportSingleOptions } from 'pino';
 import PinoPretty from 'pino-pretty';
@@ -35,7 +31,6 @@ import { createUserContentTable } from './data/model/tables/UserLinkedContent.js
 import { createUserLinkedPlatformTable } from './data/model/tables/UserLinkedPlatform.js';
 import { createUserLinkedPlatformCommunityTable } from './data/model/tables/UserLinkedPlatformCommunity.js';
 import { createUserLinkedPlatformProfileTable } from './data/model/tables/UserLinkedPlatformProfile.js';
-import { isErrorOutcome } from './exports.js';
 import { generateMissingThumbnails } from './services/content/generate-content-thumbnails.js';
 import { optimiseAllGeneratedThumbnails } from './services/content/optimisation/optimise-generated-thumbnails.js';
 import { sequentialAsync } from './utils/async/sequential-async.js';
@@ -55,9 +50,16 @@ export let logger: Logger<never> = pino({
 		targets: [defaultLoggerTransport],
 	},
 });
+exitus.setLogConfig({
+	debug: logger.debug,
+	error: logger.error,
+	fatal: logger.fatal,
+	info: logger.info,
+	warn: logger.warn,
+});
 
 export const config = await updateServerConfig(args).then((config) => {
-	if (isErrorOutcome(config)) {
+	if (isError(config)) {
 		logger.fatal(config, 'Failed to load config');
 		process.exit(1);
 	}
@@ -112,10 +114,7 @@ export const quit = ({
 
 		const logKind = kind === 'fatal' ? 'fatal' : 'debug';
 		quitFileLogger[logKind](obj, msg);
-		quitStdoutLogger[logKind](
-			msg,
-			'Check the log file for potential additional information.',
-		);
+		quitStdoutLogger[logKind](msg, 'Check the log file for potential additional information.');
 	}
 
 	process.exit(kind === 'fatal' ? 1 : 0);
@@ -196,7 +195,7 @@ await sequentialAsync<
 	],
 	true,
 ).then((results) => {
-	const errors = results.filter(isErrorOutcome);
+	const errors = results.filter(isError);
 	if (errors.length !== 0) {
 		quit({
 			log: {

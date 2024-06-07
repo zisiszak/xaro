@@ -1,7 +1,8 @@
+import { newError } from 'exitus';
 import path from 'path';
-import { errorOutcome, mkdirDefaults } from '~/exports.js';
 import { config, db, logger } from '~/index.js';
 import { $callInsert } from '~/libs/kysely/index.js';
+import { mkdirDefaults } from '~/utils/fs/index.js';
 import { type Platform } from '../model/tables/index.js';
 
 export async function linkUserToPlatform({
@@ -32,8 +33,9 @@ export async function linkUserToPlatform({
 			return null;
 		})
 		.catch((err) =>
-			errorOutcome({
+			newError({
 				caughtException: err,
+				log: 'error',
 				message: 'Failed to link user to platform.',
 			}),
 		);
@@ -64,12 +66,7 @@ export async function getPlatformDirs(nameOrId: number | string) {
 	const platformAssetsDir = path.join(assetsRootDir, 'platform');
 	const profileAssetsDir = path.join(assetsRootDir, 'profile');
 
-	await mkdirDefaults(
-		profileAssetsDir,
-		platformAssetsDir,
-		communityAssetsDir,
-		referenceDir,
-	);
+	await mkdirDefaults(profileAssetsDir, platformAssetsDir, communityAssetsDir, referenceDir);
 
 	return {
 		root: rootDir,
@@ -89,10 +86,6 @@ export async function getPlatformDetails(
 	return db
 		.selectFrom('Platform')
 		.selectAll()
-		.where(
-			typeof platformIdOrName === 'string' ? 'name' : 'id',
-			'=',
-			platformIdOrName,
-		)
+		.where(typeof platformIdOrName === 'string' ? 'name' : 'id', '=', platformIdOrName)
 		.executeTakeFirstOrThrow();
 }

@@ -5,11 +5,10 @@ import {
 	type VideoContentFileExtension,
 } from '../../../data/model/shared/content-kinds.js';
 
+import { GenericError, newError } from 'exitus';
 import { getFileSize } from '~/utils/fs/index.js';
 import {
-	GenericError,
 	contentFileCategoriesMap,
-	errorOutcome,
 	isThumbnailFileCategory,
 	type ContentFileCategory,
 } from '../../../exports.js';
@@ -26,20 +25,16 @@ export interface ContentFileInfo<Kind extends ContentKind> {
 
 	basename: string;
 
-	extension: Kind extends 'image'
-		? ImageContentFileExtension
-		: VideoContentFileExtension;
+	extension: Kind extends 'image' ? ImageContentFileExtension : VideoContentFileExtension;
 
 	size: number;
 
 	hash: string;
 
 	extractedMetadata:
-		| (Kind extends 'image'
-				? ExtractedImageMetadata
-				: ExtractedVideoMetadata)
+		| (Kind extends 'image' ? ExtractedImageMetadata : ExtractedVideoMetadata)
 		| null;
-};
+}
 
 export const readContentFileInfo = async <
 	Kind extends ContentKind,
@@ -47,44 +42,45 @@ export const readContentFileInfo = async <
 >(
 	filePath: string,
 	fileCategory: Category,
-): Promise<
-	| ContentFileInfo<Kind>
-	| GenericError
-> => {
+): Promise<ContentFileInfo<Kind> | GenericError> => {
 	const { kind, basename, ext } = getContentFileFilenameInfo(filePath);
 	if (kind === 'unsupported') {
-		return errorOutcome({
-			'message': "Kind is not supported"
+		return newError({
+			message: 'File kind is not supported',
+			log: 'error',
+			context: {
+				filePath,
+				fileCategory,
+			},
 		});
 	}
 	if (
 		(isThumbnailFileCategory(fileCategory) && kind !== 'image') ||
-		(fileCategory === contentFileCategoriesMap.PREVIEW_VIDEO &&
-			kind !== 'video')
+		(fileCategory === contentFileCategoriesMap.PREVIEW_VIDEO && kind !== 'video')
 	) {
-		return errorOutcome({
-			message: "Kind does not match provided file category."
-		})
+		return newError({
+			message: 'Kind does not match provided file category.',
+			log: 'error',
+			context: {
+				filePath,
+				fileCategory,
+			},
+		});
 	}
 
 	const size = await getFileSize(filePath);
 	const hash = await hashFile(filePath);
 
-	let extractedMetadata:
-		| ExtractedImageMetadata
-		| ExtractedVideoMetadata
-		| null = null;
+	let extractedMetadata: ExtractedImageMetadata | ExtractedVideoMetadata | null = null;
 	if (kind === 'image') {
 		extractedMetadata = readImageFileDimensions(filePath);
 	} else if (kind === 'video') {
-		extractedMetadata = await ffmpeg
-			.readMetadata(filePath)
-			.then((result) => {
-				if (typeof result === 'symbol') {
-					return null;
-				}
-				return result;
-			});
+		extractedMetadata = await ffmpeg.readMetadata(filePath).then((result) => {
+			if (typeof result === 'symbol') {
+				return null;
+			}
+			return result;
+		});
 	}
 
 	return {

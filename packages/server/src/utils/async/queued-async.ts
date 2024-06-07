@@ -1,6 +1,6 @@
-import { GenericError, errorOutcome } from '../outcomes.js';
-
 // TODO: Fix this up cos it broke
+
+import { GenericError, newError } from 'exitus';
 
 /**
  * ### Promise Utility Function
@@ -34,9 +34,9 @@ export const queuedAsync = <T, O>(
 	const mapLength = argsMap.length;
 	const reversedArgs = [...argsMap].reverse();
 
-	const workers: Promise<O | void | GenericError>[] = new Array(
-		maxConcurrentTasks,
-	).map(() => Promise.resolve());
+	const workers: Promise<O | void | GenericError>[] = new Array(maxConcurrentTasks).map(() =>
+		Promise.resolve(),
+	);
 	const promises: Promise<O | GenericError>[] = [];
 	const results: (O | GenericError)[] = [];
 
@@ -46,10 +46,13 @@ export const queuedAsync = <T, O>(
 			const poppedArg = reversedArgs.pop()!;
 			const p = workers[mapIndex]!.then(async () =>
 				func(poppedArg)
-					.catch((err) => errorOutcome({
-					caughtException: err,
-					message: "Queued async unhandled exception."
-					}))
+					.catch((err) =>
+						newError({
+							caughtException: err,
+							message: 'Queued async unhandled exception.',
+							log: 'error',
+						}),
+					)
 					.then((result) => {
 						appendPromise(mapIndex);
 						results[currentIndex] = result;

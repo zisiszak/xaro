@@ -1,6 +1,6 @@
+import { isError, newError } from 'exitus';
 import { URL } from 'url';
 import { getPlatformDirs } from '~/data/access/platform.js';
-import { errorOutcome, isErrorOutcome } from '~/exports.js';
 import { db, logger } from '~/index.js';
 import { getPluginModulesByKind } from '~/plugins/loader.js';
 import {
@@ -10,23 +10,22 @@ import {
 import { isUrl, urlToRegExp } from '~/utils/strings/format-urls.js';
 import { downloadPlatformAssets } from './download-platform-assets.js';
 
-export const findMatchingGenericPlatformManager = (inputUrl: string): (null | {
+export const findMatchingGenericPlatformManager = (
+	inputUrl: string,
+): null | {
 	pluginModule: GenericPlatformsManager;
 	compatibilityResult: true | string;
-}) => {
-	const genericPlatformManagers = getPluginModulesByKind(
-		'generic-platforms-manager',
-	);
+} => {
+	const genericPlatformManagers = getPluginModulesByKind('generic-platforms-manager');
 	if (genericPlatformManagers.length === 0) {
-		logger.error(
-			errorOutcome({
-				message:
-					'No generic platform managers were found when trying to resolve unidentified platform from url.',
-				context: {
-					inputUrl,
-				},
-			}),
-		);
+		newError({
+			message:
+				'No generic platform managers were found when trying to resolve unidentified platform from url.',
+			context: {
+				inputUrl,
+			},
+			log: 'error',
+		});
 		return null;
 	}
 
@@ -58,7 +57,7 @@ export const findMatchingGenericPlatformManager = (inputUrl: string): (null | {
 		compatibilityResult: compatibilityResult,
 		pluginModule: matchingManager,
 	};
-}
+};
 
 export interface AddUnidentifiedPlatformProps {
 	inputUrl: string;
@@ -74,8 +73,7 @@ export async function addUnidentifiedPlatform({
 	const manager = findMatchingGenericPlatformManager(inputUrl);
 	if (!manager) {
 		logger.info({
-			message:
-				'No compatible GenericPlatformsManager plugin module found.',
+			message: 'No compatible GenericPlatformsManager plugin module found.',
 			context: {
 				inputUrl,
 			},
@@ -92,13 +90,12 @@ export async function addUnidentifiedPlatform({
 		genericManagerModule: genericPlatformsManager,
 	};
 	if (!extractor) {
-		logger.error(
-			errorOutcome({
-				message:
-					'GenericPlatformsManager plugin module was found, but included no means of getting platform details.',
-				context: context,
-			}),
-		);
+		newError({
+			message:
+				'GenericPlatformsManager plugin module was found, but included no means of getting platform details.',
+			context: context,
+			log: 'error',
+		});
 		return undefined;
 	}
 
@@ -109,13 +106,12 @@ export async function addUnidentifiedPlatform({
 		},
 		{},
 	).catch((err) => {
-		if (!isErrorOutcome(err)) {
-			logger.error(
-				errorOutcome({
-					message: 'Unhandled exception.',
-					context: context,
-				}),
-			);
+		if (!isError(err)) {
+			newError({
+				message: 'Unhandled exception.',
+				context: context,
+				log: 'error',
+			});
 		}
 		return null;
 	});
@@ -135,13 +131,11 @@ export async function addUnidentifiedPlatform({
 	} = extractedPlatformDetails;
 
 	if (!isUrl(homeUrl)) {
-		logger.error(
-			errorOutcome({
-				message:
-					'Invalid "homeUrl" value provided by GenericPlatformsManager module.',
-				context: { ...context, homeUrl },
-			}),
-		);
+		newError({
+			message: 'Invalid "homeUrl" value provided by GenericPlatformsManager module.',
+			log: 'error',
+			context: { ...context, homeUrl },
+		});
 		return undefined;
 	}
 
@@ -158,21 +152,19 @@ export async function addUnidentifiedPlatform({
 					});
 				})
 				.catch((err) => {
-					if (isErrorOutcome(err)) {
+					if (isError(err)) {
 						return;
 					}
-					logger.error(
-						errorOutcome({
-							message:
-								'Unexpected error downloading platform assets.',
-							caughtException: err,
-							context: {
-								...context,
-								downloadableAssets,
-								platform: name,
-							},
-						}),
-					);
+					newError({
+						message: 'Unexpected error downloading platform assets.',
+						caughtException: err,
+						log: 'error',
+						context: {
+							...context,
+							downloadableAssets,
+							platform: name,
+						},
+					});
 				}),
 		);
 	}
@@ -182,8 +174,7 @@ export async function addUnidentifiedPlatform({
 		.values({
 			description,
 			displayName,
-			urlRegExp: (matchExpression ?? urlToRegExp(new URL(homeUrl)))
-				.source,
+			urlRegExp: (matchExpression ?? urlToRegExp(new URL(homeUrl))).source,
 			homeUrl,
 			name,
 			genericPlatformsManager: genericPlatformsManager,
@@ -193,14 +184,12 @@ export async function addUnidentifiedPlatform({
 		.executeTakeFirstOrThrow()
 		.then(async ({ insertId }) => Number(insertId))
 		.catch((err) => {
-			logger.error(
-				errorOutcome({
-					message:
-						'Failed to insert resolved unidentified platform into database.',
-					context: { ...context, platform: name },
-					caughtException: err,
-				}),
-			);
+			newError({
+				message: 'Failed to insert resolved unidentified platform into database.',
+				context: { ...context, platform: name },
+				caughtException: err,
+				log: 'error',
+			});
 			return undefined;
 		});
 }

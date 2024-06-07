@@ -1,9 +1,9 @@
+import { exitus } from 'exitus';
 import { type RequestHandler } from 'express';
 import path from 'path';
 import { contentFileExtensionMap } from '../../data/model/shared/content-kinds.js';
 import { type MediaUploadParams } from '../../data/model/tables/ContentUpload.js';
 import { config, db, logger } from '../../index.js';
-import { ERROR, errorOutcome, isErrorOutcome } from '../../utils/outcomes.js';
 
 export type Body = {
 	params: MediaUploadParams;
@@ -35,28 +35,27 @@ export const RegisterNewContentUploadController: RequestHandler<
 		(params.kind === 'thumbnail' &&
 			typeof params.forContentId === 'undefined')
 	) {
-		errorOutcome(
-			ERROR.PARAMS,
+		logger.error(exitus.newError(
 			{
+				kind:  exitus.errorKind.params,
 				message: 'Invalid body syntax',
 				context: {
 					body: req.body,
 					userId: userId,
 				},
 			},
-			logger.warn,
-		);
+		));
 		return res.status(400).end();
 	}
 
 	if (path.extname(originalFileName) in contentFileExtensionMap === false) {
-		errorOutcome({
+		logger.error(exitus.newError({
 			message: 'Unsupported file format.',
 			context: {
 				userId,
 				originalFileName,
 			},
-		});
+		}));
 		return res.status(400).end();
 	}
 
@@ -70,7 +69,7 @@ export const RegisterNewContentUploadController: RequestHandler<
 		.then((exists) => {
 			if (exists) {
 				res.status(400).end();
-				const outcome = errorOutcome({
+				const outcome = exitus.newError({
 					message: 'File hash already exists in database',
 				});
 				logger.error(outcome);
@@ -106,13 +105,12 @@ export const RegisterNewContentUploadController: RequestHandler<
 			});
 		})
 		.catch((err) => {
-			if (isErrorOutcome(err)) {
-				return;
-			}
-			errorOutcome({
-				caughtException: err,
-				message: 'Unhandled exception',
-			});
+			logger.error(
+				exitus.isError(err) ? err : exitus.newError({
+					caughtException: err,
+					message: "Unhandled exception",
+				})
+			);
 			res.status(500).end();
 		});
 };

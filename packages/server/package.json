@@ -10,18 +10,17 @@
 		"start": "node --env-file=.env --trace-uncaught dist/index.js"
 	},
 	"dependencies": {
-		"is-guard": "^1.0.0",
 		"@xaro/utils": "workspace:*",
-
-
 		"arg": "^5.0.2",
 		"better-sqlite3": "^9.4.5",
 		"cookie-parser": "^1.4.6",
 		"cors": "^2.8.5",
+		"exitus": "^1.1.8",
 		"express": "^4.19.2",
 		"fluent-ffmpeg": "^2.1.2",
 		"formidable": "^3.5.1",
 		"image-size": "^1.1.1",
+		"is-guard": "^1.0.0",
 		"jsdom": "^24.0.0",
 		"jsonwebtoken": "^9.0.2",
 		"kysely": "^0.27.3",

@@ -1,6 +1,6 @@
+import { isError, newError } from 'exitus';
 import { db } from '~/index.js';
 import { $callInsert, $callSelect } from '~/libs/kysely/index.js';
-import { errorOutcome } from '~/utils/outcomes.js';
 import { toAlphanumericKebabCase } from '~/utils/strings/exps/index.js';
 import { type PlatformProfile } from '../model/tables/index.js';
 import { addCreatorIfNotExists } from './person.js';
@@ -20,7 +20,7 @@ export async function linkUserToPlatformProfile({
 		})
 		.$call($callInsert.onConflictDoNothing)
 		.catch((err) =>
-			errorOutcome({
+			newError({
 				caughtException: err,
 				message: 'Failed to link user to platform profile.',
 			}),
@@ -57,11 +57,7 @@ export async function addPlatformProfileIfNotExists(
 		.where('sourceId', '=', insertValue.sourceId)
 		.where('linkedPlatformId', '=', insertValue.linkedPlatformId);
 	if (typeof insertValue.linkedPersonId !== 'undefined') {
-		existsQuery = existsQuery.where(
-			'linkedPersonId',
-			'=',
-			insertValue.linkedPersonId,
-		);
+		existsQuery = existsQuery.where('linkedPersonId', '=', insertValue.linkedPersonId);
 	}
 
 	return existsQuery.$call($callSelect.first).then(async (result) => {
@@ -70,22 +66,24 @@ export async function addPlatformProfileIfNotExists(
 		}
 
 		if (extractMetadataWhenProfileDoesNotExist) {
-			const extracted =
-				await extractMetadataWhenProfileDoesNotExist().catch(
-					() => null,
-				);
-			if (extracted === null) {
-				return Promise.reject(
-					errorOutcome({
-						message: 'Failed to extract platform profile metadata.',
-						context: props,
-					}),
-				);
+			const extracted = await extractMetadataWhenProfileDoesNotExist().catch((err) =>
+				newError({
+					caughtException: err,
+					log: err,
+					message:
+						'An unhandled error occured while attempting to extract platform profile metadata.',
+					context: props,
+				}),
+			);
+			if (isError(extracted)) {
+				return Promise.reject(extracted);
 			}
+
 			insertValue = {
 				...insertValue,
 				...extracted,
-				assets: JSON.stringify(extracted.assets) ?? insertValue.assets,
+				assets:
+					(extracted && JSON.stringify(extracted.assets)) ?? insertValue.assets ?? null,
 			};
 		}
 

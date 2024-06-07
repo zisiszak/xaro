@@ -28,16 +28,6 @@ interface ForwardedPluginProps {}
 
 declare namespace Express {
 	export interface Request {
-		// user?: {};
-		// passthrough?: {
-		// platformId?: number;
-		// platformName?: string;
-		// platformManager?: PluginModuleReference | null;
-		// platformMediaExtractor?: PluginModuleReference | null;
-		// platformMetadataExtractor?: PluginModuleReference | null;
-		// contentId?: number;
-		// staticFilePath?: string;
-		// };
 		forwarded: {
 			platform: ForwardedPlatformProps | null;
 			plugin: ForwardedPluginProps | null;

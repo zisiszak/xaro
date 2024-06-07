@@ -1,3 +1,4 @@
+import { errorKind, isError, newError } from 'exitus';
 import { access, rename } from 'fs/promises';
 import path from 'path';
 import {
@@ -23,11 +24,6 @@ import {
 import { hashFile } from '../../utils/fs/hash-file.js';
 import { getFileSize } from '../../utils/fs/index.js';
 import { readImageFileDimensions } from '../../utils/media-utils/read-image-file-dimensions.js';
-import {
-	FS_ERROR,
-	errorOutcome,
-	isErrorOutcome,
-} from '../../utils/outcomes.js';
 import { formatContentFileFilename } from './file-management/format-content-filename.js';
 import { prepareExtractedFileMetadata } from './file-management/prepare-content-file-metadata.js';
 import { resolveContentFileDirectory } from './file-management/resolve-content-directory.js';
@@ -58,10 +54,7 @@ export type ImportNewMediaFileProps = {
 	fileSource: Omit<Extract<ImportMediaSourceItem, { kind: 'file' }>, 'kind'>;
 	contentId: number;
 };
-export const importNewMediaFile = async ({
-	fileSource,
-	contentId,
-}: ImportNewMediaFileProps) => {
+export const importNewMediaFile = async ({ fileSource, contentId }: ImportNewMediaFileProps) => {
 	const {
 		currentFilePath: filepath,
 		originalFilename = null,
@@ -73,7 +66,7 @@ export const importNewMediaFile = async ({
 	const { ext, kind } = getContentFileFilenameInfo(filepath);
 	if (kind === 'unsupported') {
 		return Promise.reject(
-			errorOutcome({
+			newError({
 				message: 'File kind is not supported.',
 				context: {
 					fileExtension: ext,
@@ -88,9 +81,8 @@ export const importNewMediaFile = async ({
 		})
 	) {
 		return Promise.reject(
-			errorOutcome({
-				message:
-					'File is not a valid file type for the selected file category.',
+			newError({
+				message: 'File is not a valid file type for the selected file category.',
 				context: {
 					fileKind: kind,
 					fileCategory: category,
@@ -115,7 +107,7 @@ export const importNewMediaFile = async ({
 		.executeTakeFirst();
 	if (typeof existingFile !== 'undefined') {
 		return Promise.reject(
-			errorOutcome({
+			newError({
 				message: 'File hash already found in database.',
 				context: {
 					existingFileId: existingFile.id,
@@ -126,22 +118,14 @@ export const importNewMediaFile = async ({
 		);
 	}
 
-	let extractedFileMetadata:
-		| ExtractedImageMetadata
-		| ExtractedVideoMetadata
-		| null = null;
+	let extractedFileMetadata: ExtractedImageMetadata | ExtractedVideoMetadata | null = null;
 	if (kind === 'image') {
 		extractedFileMetadata = readImageFileDimensions(filepath);
 	} else if (kind === 'video') {
-		extractedFileMetadata = await ffmpeg
-			.readMetadata(filepath)
-			.catch(() => null);
+		extractedFileMetadata = await ffmpeg.readMetadata(filepath).catch(() => null);
 	}
 
-	const preparedFileMetadata = prepareExtractedFileMetadata(
-		kind,
-		extractedFileMetadata,
-	);
+	const preparedFileMetadata = prepareExtractedFileMetadata(kind, extractedFileMetadata);
 	const resolvedImportDirectory = await resolveContentFileDirectory({
 		contentId: contentId,
 		contentFileCategory: category,
@@ -154,10 +138,7 @@ export const importNewMediaFile = async ({
 	});
 
 	const importPath = path.join(resolvedImportDirectory, formattedFilename);
-	const mediaDirRelativeImportPath = path.relative(
-		config.mediaDir,
-		importPath,
-	);
+	const mediaDirRelativeImportPath = path.relative(config.mediaDir, importPath);
 
 	let result = Promise.resolve();
 
@@ -168,7 +149,7 @@ export const importNewMediaFile = async ({
 				.catch(() => false)
 		) {
 			return Promise.reject(
-				errorOutcome({
+				newError({
 					context: {
 						resolvedImportPath: importPath,
 					},
@@ -179,7 +160,8 @@ export const importNewMediaFile = async ({
 			result = result.then(() =>
 				rename(filepath, importPath).catch((err) =>
 					Promise.reject(
-						errorOutcome(FS_ERROR, {
+						newError({
+							kind: errorKind.fs,
 							message: 'Failed to move file to new location',
 							context: {
 								oldPath: filepath,
@@ -215,9 +197,9 @@ export const importNewMediaFile = async ({
 		)
 		.catch((err) =>
 			Promise.reject(
-				isErrorOutcome(err)
+				isError(err)
 					? err
-					: errorOutcome({
+					: newError({
 							message: 'Unexpected error.',
 							context: {
 								filePath: filepath,
@@ -262,26 +244,17 @@ export const importContent = async ({
 	userId,
 	sources: { main, originalThumbnail },
 	metadata: { platform: platformMetadata, user: userMetadata = {} },
-	options: {
-		generateDefaultThumbnails = false,
-		createOptimisedMedia = true,
-	} = {},
+	options: { generateDefaultThumbnails = false, createOptimisedMedia = true } = {},
 }: ImportNewContentProps) => {
 	if (main.kind !== 'file') {
 		return Promise.reject(
-			errorOutcome(
-				{
-					message:
-						"originalMedia.kind currently only supports 'file' kinds",
-					context: {
-						originalMedia: main,
-						userId,
-					},
+			newError({
+				message: "originalMedia.kind currently only supports 'file' kinds",
+				context: {
+					originalMedia: main,
+					userId,
 				},
-				{
-					stack: false,
-				},
-			),
+			}),
 		);
 	}
 
@@ -290,15 +263,10 @@ export const importContent = async ({
 	] as ContentKind | undefined;
 	if (!contentKind) {
 		return Promise.reject(
-			errorOutcome(
-				{
-					message: 'Original Media is not of a supported kind.',
-				},
-				logger.error,
-				{
-					stack: false,
-				},
-			),
+			newError({
+				message: 'Original Media is not of a supported kind.',
+				log: 'error',
+			}),
 		);
 	}
 
@@ -339,21 +307,18 @@ export const importContent = async ({
 					.values({ ...platformMetadata, linkedContentId: contentId })
 					.executeTakeFirst()
 					.catch((err: unknown) =>
-						errorOutcome(
-							{
-								message:
-									'Failed to add PlatformLinkedMedia data to new import.',
-								context: {
-									platformMetadata,
-									mediaId: contentId,
-									userId,
-								},
-								caughtException: err,
+						newError({
+							message: 'Failed to add PlatformLinkedMedia data to new import.',
+							context: {
+								platformMetadata,
+								mediaId: contentId,
+								userId,
 							},
-							logger.error,
-						),
+							caughtException: err,
+							log: 'error',
+						}),
 					);
-				if (isErrorOutcome(outcome)) {
+				if (isError(outcome)) {
 					return Promise.reject(outcome);
 				}
 			}
@@ -367,18 +332,16 @@ export const importContent = async ({
 						category: contentFileCategoriesMap.THUMB_ORIGINAL,
 					},
 				}).catch((err) => {
-					errorOutcome(
-						{
-							message: 'Failed to import original thumbnail',
-							caughtException: err,
-							context: {
-								originalThumbnail,
-								mediaId: contentId,
-								userId,
-							},
+					newError({
+						message: 'Failed to import original thumbnail',
+						caughtException: err,
+						context: {
+							originalThumbnail,
+							mediaId: contentId,
+							userId,
 						},
-						logger.error,
-					);
+						log: 'error',
+					});
 				});
 			}
 
@@ -387,38 +350,31 @@ export const importContent = async ({
 			const ext = path.extname(main.currentFilePath);
 			if (
 				generateDefaultThumbnails &&
-				(videoExtensions.includes(ext as VideoContentFileExtension) ||
-					ext === '.gif')
+				(videoExtensions.includes(ext as VideoContentFileExtension) || ext === '.gif')
 			) {
-				await generateMediaThumbnails({ mediaId: contentId }).catch(
-					(err) => {
-						logger.error(err);
+				await generateMediaThumbnails({ mediaId: contentId }).catch((err) => {
+					logger.error(err);
 
-						if (isErrorOutcome(err)) {
-							return;
-						}
-						errorOutcome(
-							{
-								caughtException: err,
-							},
-							logger.error,
-						);
-					},
-				);
+					if (isError(err)) {
+						return;
+					}
+					newError({
+						caughtException: err,
+						log: 'error',
+					});
+				});
 			}
 			if (createOptimisedMedia) {
 				await createOptimisedFilesForImage({
 					contentId: contentId,
 				}).catch((err) => {
-					if (isErrorOutcome(err)) {
+					if (isError(err)) {
 						return;
 					}
-					errorOutcome(
-						{
-							caughtException: err,
-						},
-						logger.error,
-					);
+					newError({
+						caughtException: err,
+						log: 'error',
+					});
 				});
 			}
 

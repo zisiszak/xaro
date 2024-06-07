@@ -1,8 +1,8 @@
 import { cleanInt } from '@xaro/utils';
+import { exitus } from 'exitus';
 import { type RequestHandler } from 'express';
 import { db, logger } from '../../index.js';
 import { checkAnyExist, selectFirst } from '../../libs/kysely/index.js';
-import { ERROR, errorOutcome } from '../../utils/outcomes.js';
 
 export const AuthorizeContentAccessMiddleware: RequestHandler<
 	{ contentId?: string },
@@ -65,7 +65,8 @@ export const AuthorizeContentAccessMiddleware: RequestHandler<
 			)
 			.$call(checkAnyExist)
 			.catch((err: unknown) => {
-				errorOutcome(ERROR.UNEXPECTED, {
+			 exitus.newError({
+				kind: exitus.errorKind.unexpected,
 					caughtException: err,
 					message: 'Unexpected error when querying the database.',
 					context: {
