@@ -1,5 +1,5 @@
 import { cleanInt } from '@xaro/utils';
-import { exitus } from 'exitus';
+import { newError } from 'exitus';
 import { type RequestHandler } from 'express';
 import { getPlatformNameFromId } from '~/data/access/platform.js';
 import { type PlatformProfile } from '../../data/model/tables/index.js';
@@ -65,7 +65,7 @@ export const GetAboutPlatformProfileController: RequestHandler<Params, Result> =
 				platformProfile.linkedPlatformId,
 			).catch(() => null);
 			if (platformName === null) {
-				exitus.newError({
+				newError({
 					message:
 						'Failed to resolve platform name from platformId that was assigned to a platform profile.',
 					context: {

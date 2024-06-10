@@ -1,5 +1,5 @@
 import { cleanInt } from '@xaro/utils';
-import { exitus } from 'exitus';
+import { errorKind, newError } from 'exitus';
 import { type RequestHandler } from 'express';
 import { db, logger } from '../../index.js';
 import { checkAnyExist, selectFirst } from '../../libs/kysely/index.js';
@@ -33,8 +33,7 @@ export const AuthorizeContentAccessMiddleware: RequestHandler<
 			});
 		if (contentLinkedFile === null) {
 			return;
-		} else if (typeof contentLinkedFile === 'undefined')
-			return res.status(404).end();
+		} else if (typeof contentLinkedFile === 'undefined') return res.status(404).end();
 
 		contentId = contentLinkedFile.id;
 	} else {
@@ -65,8 +64,8 @@ export const AuthorizeContentAccessMiddleware: RequestHandler<
 			)
 			.$call(checkAnyExist)
 			.catch((err: unknown) => {
-			 exitus.newError({
-				kind: exitus.errorKind.unexpected,
+				newError({
+					kind: errorKind.unexpected,
 					caughtException: err,
 					message: 'Unexpected error when querying the database.',
 					context: {

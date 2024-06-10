@@ -1,5 +1,5 @@
 import { cleanString } from '@xaro/utils';
-import { exitus } from 'exitus';
+import { isError, newError } from 'exitus';
 import { RequestHandler } from 'express';
 import { getPlatformNameFromId, linkUserToPlatform } from '~/data/access/platform.js';
 import { logger } from '~/index.js';
@@ -42,9 +42,9 @@ export const AddPlatformController: RequestHandler<never, Result, Body> = async 
 					userId: userId,
 				}).catch((err) => {
 					logger.error(
-						exitus.isError(err)
+						isError(err)
 							? err
-							: exitus.newError({
+							: newError({
 									message: 'Unexpected error adding unidentified platform.',
 									caughtException: err,
 									context: {
@@ -67,7 +67,7 @@ export const AddPlatformController: RequestHandler<never, Result, Body> = async 
 				const userIsLinked = await linkUserToPlatform({
 					userId,
 					platformId,
-				}).then((result) => !exitus.isError(result));
+				}).then((result) => !isError(result));
 
 				res.status(200).json({
 					created,

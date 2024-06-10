@@ -1,4 +1,4 @@
-import { exitus, isError, newError } from 'exitus';
+import { isError, newError } from 'exitus';
 import { type RequestHandler } from 'express';
 import { rm } from 'fs/promises';
 import { type Guard } from 'is-guard';
@@ -32,14 +32,13 @@ export interface Body {
 export const ExtractPlatformContentController: RequestHandler<Params, any, Body> = (req, res) => {
 	const { contentExtractorType, contentSource, extractorOptions } = req.body;
 	if (!isContentExtractorType(contentExtractorType)) {
-		logger.warn(
-			exitus.newError({
-				message: 'Invalid content extractor type provided in request body.',
-				context: {
-					type: contentExtractorType,
-				},
-			}),
-		);
+		newError({
+			message: 'Invalid content extractor type provided in request body.',
+			context: {
+				type: contentExtractorType,
+			},
+			log: 'warn',
+		});
 		return res.status(400).end();
 	}
 
@@ -217,7 +216,6 @@ export const ExtractPlatformContentController: RequestHandler<Params, any, Body>
 	};
 	const onContentItemExtractionFailed: ContentItemExtractionCallback = () => {};
 
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 	return extractor(params as any, extractorOptions as any, context, {
 		onContentItemExtracted,
 		onContentItemExtractionFailed,

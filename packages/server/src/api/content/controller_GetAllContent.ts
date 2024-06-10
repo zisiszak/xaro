@@ -1,9 +1,9 @@
-import { exitus } from 'exitus';
+import { newError } from 'exitus';
 import { type RequestHandler } from 'express';
 import { sql } from 'kysely';
 import { getRelatedContentData } from '../../data/access/content.js';
 import { type Rating } from '../../data/model/tables/UserLinkedContent.js';
-import { db, logger } from '../../index.js';
+import { db } from '../../index.js';
 import { $callSelect } from '../../libs/kysely/index.js';
 import {
 	parseLimitOrderSortFactory,
@@ -18,21 +18,17 @@ export type Success = ApiSortedArray<GetAboutContent.Success>;
 export type Failure = undefined;
 export type Result = Success | Failure;
 
-const parseLimitOrderSort = parseLimitOrderSortFactory<
-	'PlatformLinkedContent' | 'Content'
->({
+const parseLimitOrderSort = parseLimitOrderSortFactory<'PlatformLinkedContent' | 'Content'>({
 	allowUnmappedOrderReferences: true,
 	defaultOrderBy: 'Content.dateAdded',
 	defaultLimit: 50,
 	maxLimit: 100,
 });
 
-export const GetAllContentController: RequestHandler<
-	never,
-	Result,
-	never,
-	Query
-> = async (req, res) => {
+export const GetAllContentController: RequestHandler<never, Result, never, Query> = async (
+	req,
+	res,
+) => {
 	const userId = req.forwarded.user!.id;
 	const query = req.query;
 	const los = parseLimitOrderSort(query);
@@ -53,17 +49,9 @@ export const GetAllContentController: RequestHandler<
 	let q = db
 		.selectFrom('Content')
 		.select(['Content.id as contentId', 'Content.kind as contentKind'])
-		.innerJoin(
-			'UserLinkedContent',
-			'Content.id',
-			'UserLinkedContent.linkedContentId',
-		)
+		.innerJoin('UserLinkedContent', 'Content.id', 'UserLinkedContent.linkedContentId')
 		.where('UserLinkedContent.linkedUserId', '=', userId)
-		.innerJoin(
-			'PlatformLinkedContent',
-			'PlatformLinkedContent.linkedContentId',
-			'Content.id',
-		);
+		.innerJoin('PlatformLinkedContent', 'PlatformLinkedContent.linkedContentId', 'Content.id');
 
 	if (typeof isFavourite !== 'undefined') {
 		q = q.where('UserLinkedContent.isFavourite', '=', isFavourite);
@@ -82,10 +70,7 @@ export const GetAllContentController: RequestHandler<
 		);
 	}
 
-	if (
-		typeof platformCommunity !== 'undefined' ||
-		typeof platformCommunityId !== 'undefined'
-	) {
+	if (typeof platformCommunity !== 'undefined' || typeof platformCommunityId !== 'undefined') {
 		q = q.where(
 			'PlatformLinkedContent.linkedPlatformCommunityId',
 			typeof platformCommunityId !== 'undefined' ? '=' : '=',
@@ -95,10 +80,7 @@ export const GetAllContentController: RequestHandler<
 		);
 	}
 
-	if (
-		typeof platformProfile !== 'undefined' ||
-		typeof platformProfileId !== 'undefined'
-	) {
+	if (typeof platformProfile !== 'undefined' || typeof platformProfileId !== 'undefined') {
 		q = q.where(
 			'PlatformLinkedContent.linkedPlatformProfileId',
 			typeof platformProfileId !== 'undefined' ? '=' : 'in',
@@ -185,12 +167,11 @@ export const GetAllContentController: RequestHandler<
 	}
 
 	const results = await q.execute().catch((err: unknown) => {
-		logger.error(
-			exitus.newError({
-				caughtException: err,
-				message: 'Unexpected error querying database.',
-			}),
-		);
+		newError({
+			caughtException: err,
+			log: 'error',
+			message: 'Unexpected error querying database.',
+		});
 		return null;
 	});
 	if (results === null) {

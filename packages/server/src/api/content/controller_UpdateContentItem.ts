@@ -1,4 +1,4 @@
-import { exitus } from 'exitus';
+import { errorKind, newError } from 'exitus';
 import { type RequestHandler } from 'express';
 import {
 	addContentSortingTags,
@@ -52,11 +52,10 @@ export type Failure =
 // eslint-disable-next-line @typescript-eslint/no-duplicate-type-constituents
 export type Result = Success | Failure;
 
-export const UpdateContentItemController: RequestHandler<
-	never,
-	Result,
-	Body
-> = async (req, res) => {
+export const UpdateContentItemController: RequestHandler<never, Result, Body> = async (
+	req,
+	res,
+) => {
 	const contentId = req.forwarded.content!.id!;
 	const userId = req.forwarded.user!.id;
 
@@ -76,11 +75,7 @@ export const UpdateContentItemController: RequestHandler<
 	} as Success;
 
 	if (sorting.tags) {
-		if (
-			sorting.tags.some(
-				(v) => typeof v !== 'string' && typeof v !== 'number',
-			)
-		) {
+		if (sorting.tags.some((v) => typeof v !== 'string' && typeof v !== 'number')) {
 			return res.status(400).end();
 		}
 		await clearContentSortingTags(contentId);
@@ -99,12 +94,10 @@ export const UpdateContentItemController: RequestHandler<
 					sortingTagIds: tagIds,
 					contentId: contentId,
 				}).then(() => {
-					result.updates.sorting.tags = sorting.tags!.map(
-						(tag, index) => ({
-							displayName: tag,
-							id: tagIds[index]!,
-						}),
-					);
+					result.updates.sorting.tags = sorting.tags!.map((tag, index) => ({
+						displayName: tag,
+						id: tagIds[index]!,
+					}));
 				}),
 			);
 		}
@@ -194,7 +187,7 @@ export const UpdateContentItemController: RequestHandler<
 			.$call($callCheck.anyExist)
 			.catch((err: unknown) => {
 				logger.error(
-					exitus.newError({
+					newError({
 						message:
 							'UpdateMediaController: Failed to check if a id-referenced MediaFile exists in the database.',
 						caughtException: err,
@@ -239,19 +232,17 @@ export const UpdateContentItemController: RequestHandler<
 				res.status(200).json(result).end();
 			})
 			.catch((err: unknown) => {
-				logger.error(
-	exitus.newError({
-		kind: exitus.errorKind.unexpected,
-						caughtException: err,
-						message:
-							'Failed to update UserMedia table with sanitised values',
-						context: {
-							sanisitedUpdate: userContentUpdate,
-							rawUpdate: userMedia,
-							userId,
-						},
-					}),
-				);
+				newError({
+					kind: errorKind.unexpected,
+					caughtException: err,
+					log: 'error',
+					message: 'Failed to update UserMedia table with sanitised values',
+					context: {
+						sanisitedUpdate: userContentUpdate,
+						rawUpdate: userMedia,
+						userId,
+					},
+				});
 
 				res.status(500).end();
 			});

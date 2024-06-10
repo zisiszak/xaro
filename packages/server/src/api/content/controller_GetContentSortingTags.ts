@@ -1,4 +1,4 @@
-import { exitus } from 'exitus';
+import { newError } from 'exitus';
 import { RequestHandler } from 'express';
 import { SqlBool, sql } from 'kysely';
 import { db, logger } from '~/index.js';
@@ -17,12 +17,10 @@ export interface Success {
 export type Failure = undefined;
 export type Result = Success | Failure;
 
-export const GetContentSortingTagsController: RequestHandler<
-	never,
-	Result,
-	never,
-	Query
-> = async (req, res) => {
+export const GetContentSortingTagsController: RequestHandler<never, Result, never, Query> = async (
+	req,
+	res,
+) => {
 	const userId = req.forwarded.user!.id;
 	const query = req.query;
 	const {
@@ -83,52 +81,33 @@ export const GetContentSortingTagsController: RequestHandler<
 						.where((eb) =>
 							eb.and(
 								[
-									contentKind
-										? eb('Content.kind', '=', contentKind)
-										: null,
+									contentKind ? eb('Content.kind', '=', contentKind) : null,
 									typeof isFavourite !== 'undefined'
-										? eb(
-												'UserLinkedContent.isFavourite',
-												'=',
-												isFavourite,
-											)
+										? eb('UserLinkedContent.isFavourite', '=', isFavourite)
 										: null,
 									typeof minRating === 'number'
-										? eb(
-												'UserLinkedContent.rating',
-												'>=',
-												minRating,
-											)
+										? eb('UserLinkedContent.rating', '>=', minRating)
 										: null,
 									search
-										? eb(
-												'SortingTag.displayName',
-												'like',
-												likeSearch,
-											)
+										? eb('SortingTag.displayName', 'like', likeSearch)
 										: null,
 									typeof platformId !== 'undefined' ||
 									typeof platform !== 'undefined' ||
 									typeof platformCommunity !== 'undefined' ||
-									typeof platformCommunityId !==
-										'undefined' ||
+									typeof platformCommunityId !== 'undefined' ||
 									typeof platformProfile !== 'undefined' ||
 									typeof platformProfileId !== 'undefined'
 										? eb('Content.id', 'in', (eb) =>
 												eb
-													.selectFrom(
-														'PlatformLinkedContent',
-													)
+													.selectFrom('PlatformLinkedContent')
 													.select(
 														'PlatformLinkedContent.linkedContentId as id',
 													)
 													.where((eb) =>
 														eb.and(
 															[
-																typeof platformId !==
-																	'undefined' ||
-																typeof platformId !==
-																	'undefined'
+																typeof platformId !== 'undefined' ||
+																typeof platformId !== 'undefined'
 																	? eb(
 																			'PlatformLinkedContent.linkedPlatformId',
 																			typeof platformId !==
@@ -201,18 +180,14 @@ export const GetContentSortingTagsController: RequestHandler<
 													`
 																	: null,
 															].filter(
-																<T>(
-																	v: T | null,
-																): v is T =>
+																<T>(v: T | null): v is T =>
 																	v !== null,
 															),
 														),
 													),
 											)
 										: null,
-								].filter(
-									<T>(v: T | null): v is T => v !== null,
-								),
+								].filter(<T>(v: T | null): v is T => v !== null),
 							),
 						),
 				)
@@ -235,7 +210,7 @@ export const GetContentSortingTagsController: RequestHandler<
 		})
 		.catch((err) => {
 			logger.error(
-				exitus.newError({
+				newError({
 					message: 'Failed to get content sorting tags.',
 					caughtException: err,
 				}),

@@ -1,12 +1,7 @@
 export * from './data/model/shared/content-file-categories.js';
 
 // Utils
-export {
-	mkdirDefaults,
-	mkdirRecursive,
-	readFilteredFilenames
-} from './utils/fs/index.js';
-export * from './utils/outcomes.js';
+export { mkdirDefaults, mkdirRecursive, readFilteredFilenames } from './utils/fs/index.js';
 export { toAlphanumericKebabCase } from './utils/strings/exps/alphanumeric-kebab-case.js';
 export * from './utils/strings/format-urls.js';
 
@@ -18,13 +13,13 @@ export {
 	imageExtensions,
 	isContentKind as isMediaKind,
 	contentFileExtensionMap as mediaExtensionMap,
-	videoExtensions
+	videoExtensions,
 } from './data/model/shared/content-kinds.js';
 
 export type {
 	Content as Media,
 	Platform,
-	PlatformLinkedContent as PlatformLinkedMedia
+	PlatformLinkedContent as PlatformLinkedMedia,
 } from './data/model/tables/index.js';
 
 // Plugin API
