@@ -40,46 +40,17 @@ export function resolveFilePathInfo(filePath: string): FilePathInfo {
 /**
  *
  * @param path - path to test
- * @returns undefined if path doesn't exist, true if dir, false if file
+ * @returns `true` if dir, `false` if file
  */
-export async function isDir(path: string): Promise<boolean | undefined> {
-	return fs.promises
-		.stat(path)
-		.then((res) => res.isDirectory())
-		.catch(() => undefined);
+export async function isDir(path: string): Promise<boolean> {
+	return fs.promises.stat(path).then((res) => res.isDirectory());
 }
 
-export async function moveFile(
-	oldPath: string,
-	newPath: string,
-): Promise<ErrorResultTuple<() => Promise<GenericError | void>>> {
-	return fs.promises
-		.rename(oldPath, newPath)
-		.then(() => {
-			return [
-				undefined,
-				async () =>
-					fs.promises.rename(newPath, oldPath).catch((err) =>
-						newError({
-							message:
-								'File Move Error [moveFile] - Could not undo previous file move.',
-							caughtException: err,
-						}),
-					),
-			] as const;
-		})
-		.catch(
-			(err) =>
-				[
-					newError({
-						message: 'File Move Error [moveFile] - Could not rename file.',
-						caughtException: err,
-					}),
-				] as const,
-		);
+export async function moveFile(oldPath: string, newPath: string): Promise<void> {
+	return fs.promises.rename(oldPath, newPath);
 }
 
-export async function doesFileExist(filePath: string) {
+export async function doesPathExist(filePath: string) {
 	return fs.promises
 		.access(filePath)
 		.then(() => true)
@@ -91,18 +62,8 @@ export async function doesFileExist(filePath: string) {
  * @param filepath - Absolute path to file
  * @returns - Size in bytes.
  */
-export async function readFileSize(filepath: string): Promise<number | GenericError> {
-	return fs.promises
-		.stat(filepath)
-		.then((stats) => stats.size)
-		.catch((err: unknown) =>
-			newError({
-				caughtException: err,
-				context: {
-					file: filepath,
-				},
-			}),
-		);
+export async function readFileSize(filepath: string): Promise<number> {
+	return fs.promises.stat(filepath).then((stats) => stats.size);
 }
 
 export async function readFirstNBytes(filePath: string, numBytes: number): Promise<Buffer> {

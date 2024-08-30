@@ -1,10 +1,13 @@
-import { startHttpServer } from './process/http-server.js';
-import { initProcess, type XaroProcess } from './process/index.js';
+import { startHttpServer } from './http/index.js';
+import { defaultFileFormats } from './modules/files/index.js';
+import { fileFormatRepository } from './modules/files/repositories/file-format.repository.js';
+import { init, type XaroProcess } from './process/index.js';
 
 // 1. Init
-export const xaro: XaroProcess = await initProcess();
+export const xaro: XaroProcess = await init();
+await fileFormatRepository.saveOrUpdate(defaultFileFormats);
 
 // 2. Load plugins
 
 // 3. Start listening
-const { httpServer, expressApp } = startHttpServer();
+export const server = startHttpServer();

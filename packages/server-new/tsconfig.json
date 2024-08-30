@@ -36,6 +36,6 @@
 		"forceConsistentCasingInFileNames": true
 	},
 	"include": ["src", "**/*.d.ts"],
-	"files": ["src/models/db.ts", "src/util-types.d.ts"],
+	"files": ["src/util-types.d.ts"],
 	"exclude": ["node_modules", "build"]
 }

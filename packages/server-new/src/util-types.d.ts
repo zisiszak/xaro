@@ -4,11 +4,11 @@ export declare global {
 	// Primitives
 
 	/** integer boolean: true */
-	type int_true = 1;
+	type IntTrue = 1;
 	/** integer boolean: false */
-	type int_false = 0;
+	type IntFalse = 0;
 	/** int bool */
-	type int_bool = int_true | int_false;
+	type IntBool = IntTrue | IntFalse;
 
 	// ---------------------------------------------------------
 	// Objects and Arrays

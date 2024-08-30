@@ -1,43 +1,19 @@
 /* eslint-disable @typescript-eslint/consistent-type-imports */
 type PluginModuleReference = `${string}.${string}`;
 
-interface ForwardedPlatformProps {
-	id: number;
-	name: string;
-	genericPlatformsManager: PluginModuleReference | null;
-	platformManager: PluginModuleReference | null;
-	contentExtractor: PluginModuleReference | null;
-	metadataExtractor: PluginModuleReference | null;
-}
-
-interface ForwardedUserProps {
-	id: number;
-	username: string;
-	role: 'admin' | 'user';
-	expiry: number;
-}
-
-interface ForwardedStaticProps {
-	filePath?: string;
-}
-
-interface ForwardedContentProps {
-	id: number;
-}
-
-interface ForwardedPluginProps {}
-
 declare namespace Express {
 	export interface Request {
 		basicAuth?: import('./utils/index.ts').ParsedBasicAuthHeader;
-		userAccessToken?: import('./models/index.ts').UserAccessTokenPayload;
-
-		forwarded: {
-			platform: ForwardedPlatformProps | null;
-			plugin: ForwardedPluginProps | null;
-			content: ForwardedContentProps | null;
-			user: ForwardedUserProps | null;
-			static: ForwardedStaticProps | null;
-		};
+		userAccessToken?: import('./modules/users/index.ts').UserAccessTokenPayload;
+		content?: import('./models/database/tables/index.ts').Content.Selection;
+		mediaID?: number;
+		platform?: import('./models/database/tables/index.ts').Platforms.Selection;
+		platformID?: number;
+		platformCommunity?: import('./models/database/tables/index.ts').PlatformCommunities.Selection;
+		platformCommunityID?: number;
+		platformProfile?: import('./models/database/tables/index.ts').PlatformProfiles.Selection;
+		platformProfileID?: number;
+		fileID?: number;
+		fileLibraryPath?: string;
 	}
 }
