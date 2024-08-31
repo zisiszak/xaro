@@ -62,8 +62,8 @@ export const mediaRepository: MediaRepository = {
 		let query = database
 			.selectFrom('File')
 			.selectAll()
-			.leftJoin('FileToMedia', 'File.originalFileID', 'FileToMedia.fileID')
-			.leftJoin('FileToMedia', 'File.id', 'FileToMedia.fileID')
+			.leftJoin('FileToMedia', 'File.originalFileID', 'FileToMedia.originalFileID')
+			.leftJoin('FileToMedia', 'File.id', 'FileToMedia.originalFileID')
 			.select([
 				'FileToMedia.mediaID as mediaID',
 				'FileToMedia.relationship as mediaRelationship',
@@ -72,8 +72,8 @@ export const mediaRepository: MediaRepository = {
 
 		if (typeof linkedUserID === 'number') {
 			query = query
-				.innerJoin('UserToFile', 'File.id', 'UserToFile.fileID')
-				.select('UserToFile.fileID as id')
+				.innerJoin('UserToFile', 'id', 'UserToFile.originalFileID')
+				.select('UserToFile.originalFileID as id')
 				.where('UserToFile.userID', '=', linkedUserID);
 		}
 

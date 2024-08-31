@@ -1,6 +1,6 @@
 import { type Guard } from 'is-guard';
 import jsonWebToken from 'jsonwebtoken';
-import { xaro } from '~/index.js';
+import { logger } from '~/index.js';
 
 const JWT_SECRET_MISSING_MESSAGE = 'JWT_SECRET environment variable not defined.';
 
@@ -15,7 +15,8 @@ const JWT_SECRET_MISSING_MESSAGE = 'JWT_SECRET environment variable not defined.
 function encodeJwt(data: object, options?: jsonWebToken.SignOptions): string {
 	const secret = process.env.JWT_SECRET;
 	if (!secret) {
-		xaro.exit(JWT_SECRET_MISSING_MESSAGE);
+		logger.fatal(JWT_SECRET_MISSING_MESSAGE);
+		process.exit(1);
 	}
 	return jsonWebToken.sign(data, secret, options);
 }
@@ -35,7 +36,8 @@ function decodeJwt<T>(token: unknown, typeguard: Guard<T>): T | null {
 
 	const secret = process.env.JWT_SECRET;
 	if (!secret) {
-		xaro.exit(JWT_SECRET_MISSING_MESSAGE);
+		logger.fatal(JWT_SECRET_MISSING_MESSAGE);
+		process.exit(1);
 	}
 
 	const payload = jsonWebToken.verify(token, secret);
