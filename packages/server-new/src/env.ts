@@ -1,9 +1,6 @@
 import { homedir } from 'os';
 import { join } from 'path';
 
-export * from './config.args.js';
-export * from './config.file.js';
-
 declare global {
 	// eslint-disable-next-line @typescript-eslint/no-namespace
 	namespace NodeJS {
@@ -19,19 +16,23 @@ declare global {
 	}
 }
 
-export const setDefaultEnv = () => {
+export const setDefaultEnvironmentVariables = () => {
 	process.env.ROOT_DIRECTORY = join(homedir(), 'xaro');
 	process.env.HTTP_HOSTNAME = 'localhost';
 	process.env.HTTP_PORT = '5173';
 	process.env.JWT_SECRET = 'CXZNOREOP10045JCN9NFAKL94NVO5NT8FRNNNR90RNFVCOSN';
 };
 
-const requiredEnvVariableErrorMessage = (variable: string) =>
+const envVarRequiredError = (variable: string): string =>
 	`Required environment variable ${variable} is not defined.`;
 
-export const validateEnv = (): void | never => {
-	if (!process.env.ROOT_DIRECTORY) throw requiredEnvVariableErrorMessage('ROOT_DIRECTORY');
-	if (!process.env.JWT_SECRET) throw requiredEnvVariableErrorMessage('JWT_SECRET');
-	if (!process.env.HTTP_HOSTNAME) throw requiredEnvVariableErrorMessage('HTTP_HOSTNAME');
-	if (!process.env.HTTP_PORT) throw requiredEnvVariableErrorMessage('HTTP_PORT');
+// TODO: Make this more thorough.
+/** Ensures all necessary environment variables are defined. Throws if something is amiss. */
+export const validateEnvironmentVariables = async (): Promise<void> => {
+	if (!process.env.ROOT_DIRECTORY) throw envVarRequiredError('ROOT_DIRECTORY');
+	if (!process.env.JWT_SECRET) throw envVarRequiredError('JWT_SECRET');
+	if (!process.env.HTTP_HOSTNAME) throw envVarRequiredError('HTTP_HOSTNAME');
+	if (!process.env.HTTP_PORT) throw envVarRequiredError('HTTP_PORT');
+
+	return Promise.resolve();
 };

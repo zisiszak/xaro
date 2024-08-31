@@ -4,7 +4,7 @@ import {
 	type FileFormatCategory,
 	FileFormatCategoryEnum,
 	type FileFormatMetadata,
-} from '../models/file-format.model.js';
+} from '../models/index.js';
 import { fileFormatRepository } from '../repositories/index.js';
 import { getImageFileFormatMetadata } from './get-image-file-format-metadata.js';
 import { getVideoFileFormatMetadata } from './get-video-file-format-metadata.js';

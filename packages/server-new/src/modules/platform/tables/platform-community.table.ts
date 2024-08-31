@@ -13,7 +13,7 @@ export interface PlatformCommunityTableSchema
 	platformID: number;
 	name: string;
 	sourceId: string;
-	sourceUrl: string;
+	sourceUrl: string | null;
 	displayName: string;
 	description: string | null;
 	metadata: JSONColumnType<PlatformCommunityMetadata, string | undefined>;
@@ -38,7 +38,7 @@ export const PlatformCommunityTable: DatabaseTable<'PlatformCommunity'> = {
 					.onUpdate('cascade'),
 		],
 		['sourceId', 'text', (cb) => cb.notNull()],
-		['sourceUrl', 'text', (cb) => cb.notNull().unique()],
+		['sourceUrl', 'text', (cb) => cb.unique()],
 		['displayName', 'text', (cb) => cb.notNull()],
 		['description', 'text'],
 		['metadata', 'json', (cb) => cb.notNull()],

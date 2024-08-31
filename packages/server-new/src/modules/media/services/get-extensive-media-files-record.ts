@@ -1,19 +1,18 @@
 import {
-	type OriginalFileToMediaRelationship,
-	OriginalFileToMediaRelationshipEnum,
-} from '~/modules/files/index.js';
-import { type MediaFilesRecord } from '../models/media.model.js';
+	FileToMediaRelationshipEnum,
+	type FileToMediaRelationship,
+	type MediaFilesRecord,
+} from '../models/index.js';
 import { mediaRepository } from '../repositories/media.repository.js';
 
-const relationshipToRecordKeyMap: Record<OriginalFileToMediaRelationship, keyof MediaFilesRecord> =
-	{
-		[OriginalFileToMediaRelationshipEnum.Media]: 'media',
-		[OriginalFileToMediaRelationshipEnum.VideoPreview]: 'videoPreview',
-		[OriginalFileToMediaRelationshipEnum.Thumbnail]: 'thumbnail',
-		[OriginalFileToMediaRelationshipEnum.Subtitles]: 'subtitles',
-		[OriginalFileToMediaRelationshipEnum.Metadata]: 'metadata',
-		[OriginalFileToMediaRelationshipEnum.Dump]: 'dump',
-	};
+const relationshipToRecordKeyMap: Record<FileToMediaRelationship, keyof MediaFilesRecord> = {
+	[FileToMediaRelationshipEnum.Media]: 'media',
+	[FileToMediaRelationshipEnum.VideoPreview]: 'videoPreview',
+	[FileToMediaRelationshipEnum.Thumbnail]: 'thumbnail',
+	[FileToMediaRelationshipEnum.Subtitles]: 'subtitles',
+	[FileToMediaRelationshipEnum.Metadata]: 'metadata',
+	[FileToMediaRelationshipEnum.Dump]: 'dump',
+};
 
 export const getExtensiveMediaFilesRecord = async (
 	mediaID: number,

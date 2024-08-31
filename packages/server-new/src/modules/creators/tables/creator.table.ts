@@ -1,6 +1,6 @@
 import { type JSONColumnType } from 'kysely';
 import { type DatabaseTable, type TableProtocol, compileTableSchemaQuery } from '~/shared/index.js';
-import { type CreatorAliases } from '../models/creator.model.js';
+import { type CreatorAliases } from '../models/index.js';
 
 export interface CreatorTableSchema
 	extends TableProtocol.AutoDateAdded,

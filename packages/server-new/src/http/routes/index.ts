@@ -4,7 +4,7 @@ import { AboutPlatformCommunityController } from '../controllers/about-platform-
 import { AboutPlatformProfileController } from '../controllers/about-platform-profile.js';
 import { AboutPlatformController } from '../controllers/about-platform.js';
 import { AboutUserController } from '../controllers/about-user.js';
-import { AllContentController } from '../controllers/all-media.js';
+import { AllMediaController } from '../controllers/all-media.js';
 import { UserLoginController } from '../controllers/user-login.js';
 import { UserLogoutController } from '../controllers/user-logout.js';
 import { UserRegistrationController } from '../controllers/user-registration.js';
@@ -51,7 +51,7 @@ router.all(
 
 /* User: About */ router.get('/user/about', UserAccessTokenMiddleware, AboutUserController);
 
-/* Content: All */ router.get('/content', AllContentController);
+/* Content: All */ router.get('/content', AllMediaController);
 
 /* Content: About */ router.get('/content/:content_id/about', AboutContentController);
 

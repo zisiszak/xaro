@@ -1,6 +1,6 @@
 import { type JSONColumnType } from 'kysely';
 import { type DatabaseTable, type TableProtocol, compileTableSchemaQuery } from '~/shared/index.js';
-import { type FileExtension, type FileFormatCategory } from '../models/file-format.model.js';
+import { type FileExtension, type FileFormatCategory } from '../models/index.js';
 
 export interface FileFormatTableSchema extends TableProtocol.Identifiable {
 	displayName: string;

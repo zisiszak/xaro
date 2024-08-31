@@ -1,5 +1,5 @@
 import { newError } from 'exitus';
-import { xaro } from '~/index.js';
+import { logger } from '~/index.js';
 
 const millisecond_epoch_min = 10000000000;
 
@@ -23,7 +23,7 @@ export function getUtcSeconds(
 
 		return date.getUTCSeconds();
 	} catch (err) {
-		xaro.log.error(
+		logger.error(
 			newError({
 				message: 'Failed to parse date value.',
 				caughtException: err,

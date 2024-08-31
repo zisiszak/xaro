@@ -1,1 +1,3 @@
-export * from './creator.model.js';
+export type * from './records.js';
+
+export type CreatorAliases = string[];

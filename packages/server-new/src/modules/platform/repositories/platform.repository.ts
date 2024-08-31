@@ -1,10 +1,13 @@
-import { type TableInsertion, type TableSelection } from '~/modules/database.schema.js';
+import { type TableInsertion } from '~/modules/database.schema.js';
 import { findByColumn, findByID, insertRow } from '~/shared/index.js';
+import { type PlatformRecord } from '../models/index.js';
 
 export interface PlatformRepository {
-	findByID(platformID: number): Promise<TableSelection<'Platform'> | undefined>;
-	findByName(platformName: string): Promise<TableSelection<'Platform'> | undefined>;
 	save(platform: TableInsertion<'Platform'>): Promise<number>;
+
+	findByID(platformID: number): Promise<PlatformRecord | undefined>;
+
+	findByName(platformName: string): Promise<PlatformRecord | undefined>;
 }
 
 export const platformRepository: PlatformRepository = {

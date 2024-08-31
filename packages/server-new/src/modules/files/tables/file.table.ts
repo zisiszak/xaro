@@ -5,7 +5,7 @@ import {
 	compileTableSchemaQuery,
 	referenceForeignTableID,
 } from '~/shared/index.js';
-import { type FileMetadata } from '../models/file.model.js';
+import { type FileMetadata } from '../models/index.js';
 
 /** A reference to any file in the filesystem */
 export interface FileTableSchema extends TableProtocol.AutoDateAdded, TableProtocol.Identifiable {

@@ -15,7 +15,7 @@ export interface PlatformProfileTableSchema
 	displayName: string;
 	name: string;
 	sourceId: string;
-	sourceUrl: string;
+	sourceUrl: string | null;
 	description: string | null;
 	metadata: JSONColumnType<PlatformProfileMetadata, string | undefined>;
 }
@@ -47,7 +47,7 @@ export const PlatformProfileTable: DatabaseTable<'PlatformProfile'> = {
 					.onUpdate('cascade'),
 		],
 		['sourceId', 'text', (cb) => cb.notNull()],
-		['sourceUrl', 'text', (cb) => cb.notNull().unique()],
+		['sourceUrl', 'text', (cb) => cb.unique()],
 		['displayName', 'text', (cb) => cb.notNull()],
 		['description', 'text'],
 	),

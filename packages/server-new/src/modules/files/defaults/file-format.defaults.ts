@@ -1,5 +1,5 @@
 import { type TableInsertion } from '~/modules/database.schema.js';
-import { FileFormatCategoryEnum } from '../models/file-format.model.js';
+import { FileFormatCategoryEnum } from '../models/index.js';
 
 const png = {
 	id: 1,

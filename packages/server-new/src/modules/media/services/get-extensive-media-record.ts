@@ -1,5 +1,5 @@
-import { platformMediaSourceRepository } from '~/modules/platform/repositories/platform-media-source.repository.js';
-import { type ExtensiveMediaRecord, type MediaSourceRecord } from '../models/media.model.js';
+import { platformMediaSourceRepository } from '~/modules/platform/index.js';
+import { type ExtensiveMediaRecord, type MediaSourceRecord } from '../models/index.js';
 import { mediaRepository } from '../repositories/media.repository.js';
 import { getExtensiveMediaFilesRecord } from './get-extensive-media-files-record.js';
 

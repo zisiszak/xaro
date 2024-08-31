@@ -1,5 +1,5 @@
 import { type RequestHandler } from 'express';
-import { xaro } from '~/index.js';
+import { logger } from '~/index.js';
 import {
 	generateUserAuthentication,
 	type PasswordValidationError,
@@ -49,7 +49,7 @@ export const UserRegistrationController: RequestHandler<
 			})
 			.end();
 
-	if (await userRepository.isUsernameTaken(username))
+	if (await userRepository.exists(username))
 		return void res
 			.status(409)
 			.json({
@@ -77,7 +77,7 @@ export const UserRegistrationController: RequestHandler<
 		)
 
 		.catch((err) => {
-			xaro.log.error(err);
+			logger.error(err);
 			res.status(500)
 				.json({
 					error: 'unexpected',

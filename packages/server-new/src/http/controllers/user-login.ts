@@ -3,6 +3,7 @@ import {
 	hashPassword,
 	USER_ACCESS_TOKEN_EXPIRY_TIME,
 	USER_ACCESS_TOKEN_KEY,
+	type UserAccessTokenPayload,
 	userRepository,
 } from '~/modules/users/index.js';
 import { jwt } from '~/utils/json-web-token.js';
@@ -19,23 +20,17 @@ export const UserLoginController: RequestHandler = async (req, res) => {
 	)
 		return void res.status(401).end();
 
-	const payload = {
+	const payload: UserAccessTokenPayload = {
 		username: user.username,
 		id: user.id,
 		role: user.role,
+		expiry: Date.now() + USER_ACCESS_TOKEN_EXPIRY_TIME,
 	};
 
-	res.cookie(
-		USER_ACCESS_TOKEN_KEY,
-		jwt.encode({
-			...payload,
-			expiry: Date.now() + USER_ACCESS_TOKEN_EXPIRY_TIME,
-		}),
-		{
-			httpOnly: true,
-			maxAge: USER_ACCESS_TOKEN_EXPIRY_TIME,
-		},
-	)
+	res.cookie(USER_ACCESS_TOKEN_KEY, jwt.encode(payload), {
+		httpOnly: true,
+		maxAge: USER_ACCESS_TOKEN_EXPIRY_TIME,
+	})
 		.status(200)
 		.json(payload)
 		.end();

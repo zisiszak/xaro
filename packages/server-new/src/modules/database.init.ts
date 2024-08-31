@@ -16,17 +16,17 @@ import {
 	PlatformTable,
 	SortingTagTable,
 	UserMediaStatsTable,
-	UsersToPlatformsTable,
 	UserTable,
 	UserToFileTable,
 	UserToMediaTable,
 	UserToPlatformCommunityTable,
 	UserToPlatformProfileTable,
+	UserToPlatformTable,
 } from './database.tables.js';
 
 const DATABASE_FILENAME = 'index.db';
 
-export const initDatabase = async () => {
+export const connectToDatabase = async () => {
 	const database = new SQLite(join(process.env.ROOT_DIRECTORY, DATABASE_FILENAME), {
 		fileMustExist: false,
 	});
@@ -46,7 +46,7 @@ export const initDatabase = async () => {
 	await kysely.executeQuery(FileTable.compiledCreateTableQuery);
 	await kysely.executeQuery(UserToFileTable.compiledCreateTableQuery);
 	await kysely.executeQuery(PlatformTable.compiledCreateTableQuery);
-	await kysely.executeQuery(UsersToPlatformsTable.compiledCreateTableQuery);
+	await kysely.executeQuery(UserToPlatformTable.compiledCreateTableQuery);
 	await kysely.executeQuery(PlatformProfileTable.compiledCreateTableQuery);
 	await kysely.executeQuery(UserToPlatformProfileTable.compiledCreateTableQuery);
 	await kysely.executeQuery(PlatformCommunityTable.compiledCreateTableQuery);

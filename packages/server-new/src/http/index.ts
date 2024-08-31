@@ -2,7 +2,8 @@ import cookieParser from 'cookie-parser';
 import type { Express } from 'express';
 import express from 'express';
 import { type Server } from 'http';
-import { xaro } from '~/index.js';
+import { logger } from '~/index.js';
+import { MediaAccessMiddleware } from './middleware/media-access.js';
 import { UserAccessTokenMiddleware } from './middleware/user-access-token.js';
 import { apiRouter } from './routes/index.js';
 
@@ -16,13 +17,13 @@ export const startHttpServer = (): {
 
 	expressApp.use('/api', apiRouter);
 
-	expressApp.use('/static.content', UserAccessTokenMiddleware);
+	expressApp.use('/static.media', UserAccessTokenMiddleware, MediaAccessMiddleware);
 
 	const port = parseInt(process.env.HTTP_PORT);
 	const host = process.env.HTTP_HOSTNAME;
 
 	const httpServer = expressApp.listen(port, host, () => {
-		xaro.log.info(`HTTP server listening on ${host}:${port}.`);
+		logger.info(`HTTP server listening on ${host}:${port}.`);
 	});
 
 	return {

@@ -1,5 +1,5 @@
 import { ffmpeg } from '~/utils/index.js';
-import { type VideoFileFormatMetadata } from '../models/file-format.model.js';
+import { type VideoFileFormatMetadata } from '../models/index.js';
 
 export const getVideoFileFormatMetadata = (filePath: string): Promise<VideoFileFormatMetadata> =>
 	ffmpeg.readMetadata(filePath).then((metadata) => {

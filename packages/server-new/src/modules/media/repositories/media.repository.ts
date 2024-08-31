@@ -1,14 +1,12 @@
-import { xaro } from '~/index.js';
+import { database } from '~/index.js';
 import { type TableInsertion, type TableSelection } from '~/modules/database.schema.js';
-import {
-	type FileFormatCategory,
-	type OriginalFileToMediaRelationship,
-} from '~/modules/files/index.js';
+import { type FileFormatCategory } from '~/modules/files/index.js';
 import {
 	type InValueFilter,
 	type NotInValueFilter,
 } from '~/shared/database/types.value-filters.js';
 import { findByID, insert } from '~/shared/index.js';
+import { type FileToMediaRelationship } from '../models/constants.js';
 
 type MediaSelection = TableSelection<'Media'>;
 type MediaInsertion = TableInsertion<'Media'>;
@@ -23,8 +21,8 @@ export interface MediaRepository {
 		mediaID: number,
 		options?: {
 			linkedUserID?: number;
-			relationship?: InValueFilter<OriginalFileToMediaRelationship> &
-				NotInValueFilter<OriginalFileToMediaRelationship>;
+			relationship?: InValueFilter<FileToMediaRelationship> &
+				NotInValueFilter<FileToMediaRelationship>;
 			fileFormatID?: InValueFilter<number> & NotInValueFilter<number>;
 			fileFormatCategory?: InValueFilter<FileFormatCategory> &
 				NotInValueFilter<FileFormatCategory>;
@@ -33,22 +31,9 @@ export interface MediaRepository {
 	): Promise<
 		(TableSelection<'File'> & {
 			mediaID: number;
-			mediaRelationship: OriginalFileToMediaRelationship;
+			mediaRelationship: FileToMediaRelationship;
 		})[]
 	>;
-
-	// getPlatformLink(mediaID: number): Promise<TableSelection<'PlatformMediaSource'> | undefined>;
-	// linkPlatform(
-	// 	mediaID: number,
-	// 	data: {
-	// 		platformID: number;
-	// 		platformCommunityID?: number;
-	// 		platformProfileID?: number;
-	// 		metadata?: PlatformContentMetadata;
-	// 		sourceId: string;
-	// 		sourceUrl?: string;
-	// 	},
-	// ): Promise<void>;
 
 	getAllLinkedSortingTagNames(mediaID: number): Promise<string[]>;
 	linkSortingTag(mediaID: number, sortingTagID: number): Promise<undefined>;
@@ -63,7 +48,7 @@ export const mediaRepository: MediaRepository = {
 		return insert('Media', media);
 	},
 	async remove(mediaID) {
-		return xaro.db
+		return database
 			.deleteFrom('Media')
 			.where('id', '=', mediaID)
 			.executeTakeFirst()
@@ -74,7 +59,7 @@ export const mediaRepository: MediaRepository = {
 		mediaID,
 		{ linkedUserID, relationship, fileFormatID, fileFormatCategory, orderBy = 'size asc' } = {},
 	) {
-		let query = xaro.db
+		let query = database
 			.selectFrom('File')
 			.selectAll()
 			.leftJoin('FileToMedia', 'File.originalFileID', 'FileToMedia.fileID')
@@ -83,24 +68,7 @@ export const mediaRepository: MediaRepository = {
 				'FileToMedia.mediaID as mediaID',
 				'FileToMedia.relationship as mediaRelationship',
 			])
-			// .innerJoin('FsFileToMedias', 'FsFileToMedias.fsFileID', 'FsFile.id')
 			.where('FileToMedia.mediaID', '=', mediaID);
-
-		// let query = xaro.db
-		// 	.selectFrom('FsFile')
-		// 	.selectAll('FsFile')
-		// 	.where()
-		// 	.innerJoin('OriginalFile', 'FsFile.id', 'OriginalFile.fsFileID')
-		// 	.innerJoin(
-		// 		'OriginalFilesToMedias',
-		// 		'OriginalFile.id',
-		// 		'OriginalFilesToMedias.originalFileID',
-		// 	)
-		// 	.select([
-		// 		'OriginalFilesToMedias.relationship as mediaRelationship',
-		// 		'OriginalFilesToMedias.mediaID as mediaID',
-		// 	])
-		// 	.where('OriginalFilesToMedias.mediaID', '=', mediaID);
 
 		if (typeof linkedUserID === 'number') {
 			query = query
@@ -141,7 +109,7 @@ export const mediaRepository: MediaRepository = {
 		return query.orderBy(`File.${orderBy}`).execute() as Promise<any>;
 	},
 	async getAllLinkedSortingTagNames(mediaID) {
-		return xaro.db
+		return database
 			.selectFrom('SortingTag')
 			.select('name')
 			.innerJoin('MediaToSortingTag', 'MediaToSortingTag.sortingTagID', 'SortingTag.id')
@@ -150,7 +118,7 @@ export const mediaRepository: MediaRepository = {
 			.then((result) => result.map(({ name }) => name));
 	},
 	async linkSortingTag(mediaID, sortingTagID) {
-		return xaro.db
+		return database
 			.insertInto('MediaToSortingTag')
 			.values({ mediaID, sortingTagID })
 			.onConflict((cb) => cb.doNothing())
@@ -158,7 +126,7 @@ export const mediaRepository: MediaRepository = {
 			.then(() => undefined);
 	},
 	async unlinkSortingTag(mediaID, sortingTagID) {
-		return xaro.db
+		return database
 			.deleteFrom('MediaToSortingTag')
 			.where((eb) => eb.and({ mediaID, sortingTagID }))
 			.execute()

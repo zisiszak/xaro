@@ -20,7 +20,7 @@
 // 		};
 // 	}
 
-// 	return xaro.db
+// 	return database
 // 		.selectFrom('Files')
 // 		.select('id')
 // 		.where((eb) =>

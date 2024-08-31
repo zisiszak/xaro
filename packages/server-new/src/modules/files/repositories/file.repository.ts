@@ -1,23 +1,16 @@
 import { access } from 'fs/promises';
 import path, { extname, join, relative } from 'path';
-import { xaro } from '~/index.js';
+import { database } from '~/index.js';
 import { type TableInsertion, type TableSelection } from '~/modules/database.schema.js';
-import {
-	findAllByColumn,
-	findByColumn,
-	findByID,
-	insert,
-	insertRowOnConflictDoNothing,
-} from '~/shared/index.js';
+import { findAllByColumn, findByColumn, findByID, insert } from '~/shared/index.js';
 import { doesPathExist, isDir, mkdirRecursive, moveFile, readFileSize } from '~/utils/fs.js';
 import { hashFile } from '~/utils/hash-file.js';
 import { getFileFormatInfo } from '../helpers/get-file-format-info.js';
-import { type FileExtension } from '../models/file-format.model.js';
-import { type FileMetadata, type OriginalFileToMediaRelationship } from '../models/file.model.js';
+import { type FileExtension, type FileMetadata } from '../models/index.js';
 
 const MAX_FSFILE_IDS_PER_DIR = 100;
 
-type FsFileSelection = TableSelection<'File'>;
+type FileSelection = TableSelection<'File'>;
 type FsFileInsertion = TableInsertion<'File'>;
 
 interface FileFS {
@@ -70,27 +63,26 @@ const fileFS: FileFS = {
 };
 
 export interface FileRepository {
-	findByID(fsFileID: number): Promise<FsFileSelection | undefined>;
-	findByLibraryPath(libraryPath: string): Promise<FsFileSelection | undefined>;
-	findAllByHash(kind: 'file' | 'data', hash: string): Promise<FsFileSelection[]>;
-
-	resolveOriginalFileID(fsFileID: number): Promise<number>;
-	linkMediaToOriginal(
-		fsFileID: number,
-		mediaID: number,
-		relationship: OriginalFileToMediaRelationship,
-	): Promise<undefined>;
-
 	/** moves file to into library */
 	save(
 		currentFilePath: string,
 		kind: 'original' | 'optimised',
 	): Promise<{ fileID: number; isDuplicate: boolean }>;
+
+	findByID(fileID: number): Promise<FileSelection | undefined>;
+
+	findByLibraryPath(libraryPath: string): Promise<FileSelection | undefined>;
+
+	findAllByHash(kind: 'file' | 'data', hash: string): Promise<FileSelection[]>;
+
+	resolveOriginalFileID(fileID: number): Promise<number>;
+
+	resolveOriginalFileIDFromLibraryPath(libraryPath: string): Promise<number>;
 }
 
 export const fileRepository: FileRepository = {
-	async findByID(fsFileID) {
-		return findByID('File', fsFileID);
+	async findByID(fileID) {
+		return findByID('File', fileID);
 	},
 	async findAllByHash(kind, hash) {
 		return findAllByColumn('File', kind === 'data' ? 'dataHash' : 'fileHash', hash);
@@ -139,7 +131,7 @@ export const fileRepository: FileRepository = {
 			.moveToLibrary(currentFilePath, fileID)
 			.then(async (libraryPath) => {
 				const oldFilePath = currentFilePath;
-				await xaro.db
+				await database
 					.updateTable('File')
 					.set({ libraryPath })
 					.where('id', '=', fileID)
@@ -153,26 +145,24 @@ export const fileRepository: FileRepository = {
 				return { fileID, isDuplicate: false };
 			})
 			.catch(async () => {
-				await xaro.db.deleteFrom('File').where('id', '=', fileID).execute();
+				await database.deleteFrom('File').where('id', '=', fileID).execute();
 				throw 'failed to move file to destination dir.';
 			});
 	},
 
-	async resolveOriginalFileID(fsFileID) {
-		const file = await this.findByID(fsFileID);
-		if (!file) throw 'file does not exist';
+	async resolveOriginalFileID(fileID) {
+		const file = await this.findByID(fileID);
+		if (!file) throw `file row with id: '${fileID}' not found.`;
 
 		const originalFileID = file.kind === 'original' ? file.id : file.originalFileID!;
 		return originalFileID;
 	},
 
-	async linkMediaToOriginal(fsFileID, mediaID, relationship) {
-		const originalFileID = await this.resolveOriginalFileID(fsFileID);
+	async resolveOriginalFileIDFromLibraryPath(libraryPath) {
+		const file = await this.findByLibraryPath(libraryPath);
+		if (!file) throw `file row with libraryPath: ${libraryPath} not found`;
 
-		return insertRowOnConflictDoNothing('FileToMedia', {
-			fileID: originalFileID,
-			mediaID,
-			relationship,
-		});
+		const originalFileID = file.kind === 'original' ? file.id : file.originalFileID!;
+		return originalFileID;
 	},
 };

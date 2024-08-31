@@ -1,15 +1,15 @@
 import { sql } from 'kysely';
-import { type OriginalFileToMediaRelationship } from '~/modules/files/index.js';
 import {
 	compileTableSchemaQuery,
 	type DatabaseTable,
 	referenceForeignTableID,
 } from '~/shared/index.js';
+import { type FileToMediaRelationship } from '../models/index.js';
 
 export interface FileToMediaTableSchema {
-	fileID: number;
+	originalFileID: number;
 	mediaID: number;
-	relationship: OriginalFileToMediaRelationship;
+	relationship: FileToMediaRelationship;
 }
 
 export const FileToMediaTable: DatabaseTable<'FileToMedia'> = {
@@ -18,10 +18,10 @@ export const FileToMediaTable: DatabaseTable<'FileToMedia'> = {
 		'FileToMedia',
 		null,
 		{
-			modifyLastColumnEnd: sql`,UNIQUE(fileID, mediaID)`,
+			modifyLastColumnEnd: sql`,UNIQUE(originalFileID, mediaID)`,
 		},
 		[
-			'fileID',
+			'originalFileID',
 			'integer',
 			(cb) =>
 				cb

@@ -1,6 +1,6 @@
 import { newError } from 'exitus';
 import { type RequestHandler } from 'express';
-import { xaro } from '~/index.js';
+import { logger } from '~/index.js';
 import {
 	USER_ACCESS_TOKEN_KEY,
 	isUserAccessTokenPayload,
@@ -40,7 +40,7 @@ export const UserAccessTokenMiddleware: RequestHandler = (req, res, next) => {
 			}
 
 			if (data.role !== user.role || data.username !== user.username) {
-				xaro.log.info(
+				logger.info(
 					{
 						userData: data,
 						tokenPayload: user,

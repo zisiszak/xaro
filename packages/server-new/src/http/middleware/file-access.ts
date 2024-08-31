@@ -22,7 +22,7 @@ export const RequireFileAccessViaID: RequestHandler<
 		return;
 	}
 
-	const access = await userRepository.getOriginalFsFileLink(userAccessToken.id, fileID);
+	const access = await userRepository.getOriginalFileLink(userAccessToken.id, fileID);
 	if (!access) return void res.status(401).end();
 
 	req.fileID = fileID;
@@ -48,7 +48,7 @@ export const RequireFileAccessViaFilePath: RequestHandler = async (req, res, nex
 		return;
 	}
 
-	const access = await userRepository.getOriginalFsFileLink(userAccessToken.id, file.id);
+	const access = await userRepository.getOriginalFileLink(userAccessToken.id, file.id);
 	if (!access) return void res.status(401).end();
 
 	req.fileID = file.id;

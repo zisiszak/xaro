@@ -1,6 +1,8 @@
 import { createGuard, is } from 'is-guard';
 import { generateHashFromString, generateSalt } from '~/utils/hash-string.js';
 
+// TODO: MOVE THIS TO SOMEWHERE BETTER SMH
+
 export const PASSWORD_HASH_ALGORITHM = 'sha256';
 export const PASSWORD_SALT_LENGTH = 16;
 

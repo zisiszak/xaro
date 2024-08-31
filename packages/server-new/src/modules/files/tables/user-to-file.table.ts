@@ -7,7 +7,7 @@ import {
 
 export interface UserToFileTableSchema {
 	userID: number;
-	fileID: number;
+	originalFileID: number;
 }
 
 export const UserToFileTable: DatabaseTable<'UserToFile'> = {
@@ -16,7 +16,7 @@ export const UserToFileTable: DatabaseTable<'UserToFile'> = {
 		'UserToFile',
 		null,
 		{
-			modifyLastColumnEnd: sql`,UNIQUE(fileID, userID)`,
+			modifyLastColumnEnd: sql`,UNIQUE(originalFileID, userID)`,
 		},
 		[
 			'userID',
@@ -29,15 +29,14 @@ export const UserToFileTable: DatabaseTable<'UserToFile'> = {
 					.onUpdate('cascade'),
 		],
 		[
-			'fileID',
+			'originalFileID',
 			'integer',
 			(cb) =>
 				cb
 					.notNull()
 					.references(referenceForeignTableID('File'))
 					.onUpdate('cascade')
-					.onDelete('cascade')
-					.modifyEnd(sql`,UNIQUE(fileID, userID)`),
+					.onDelete('cascade'),
 		],
 	),
 };

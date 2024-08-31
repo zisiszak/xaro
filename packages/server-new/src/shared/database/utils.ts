@@ -1,4 +1,4 @@
-import { xaro } from '~/index.js';
+import { database } from '~/index.js';
 import {
 	type AnyTable,
 	type IdentifiableTableName,
@@ -26,7 +26,7 @@ export const findByID = async <Table extends IdentifiableTableName>(
 	table: Table,
 	id: number,
 ): Promise<TableSelection<Table> | undefined> =>
-	xaro.db
+	database
 		.selectFrom(table)
 		.selectAll()
 		.where('id', '=', id as any)
@@ -36,7 +36,7 @@ export const checkExistsByID = async <Table extends IdentifiableTableName>(
 	table: Table,
 	id: number,
 ): Promise<boolean> =>
-	xaro.db
+	database
 		.selectFrom(table)
 		.select('id')
 		.where('id', '=', id as any)
@@ -51,7 +51,7 @@ export const findByColumn = async <
 	column: Column,
 	value: Column extends keyof TableSelection<Table> ? TableSelection<Table>[Column] : never,
 ): Promise<TableSelection<Table> | undefined> =>
-	xaro.db
+	database
 		.selectFrom(table)
 		.selectAll()
 		.where(column, '=', value as any)
@@ -65,7 +65,7 @@ export const findAllByColumn = async <
 	column: Column,
 	value: Column extends keyof TableSelection<Table> ? TableSelection<Table>[Column] : never,
 ): Promise<TableSelection<Table>[]> =>
-	xaro.db
+	database
 		.selectFrom(table)
 		.selectAll()
 		.where(column, '=', value as any)
@@ -79,7 +79,7 @@ export const checkExistsByColumn = async <
 	column: Column,
 	value: Column extends keyof TableSelection<Table> ? TableSelection<Table>[Column] : never,
 ): Promise<boolean> =>
-	xaro.db
+	database
 		.selectFrom(table)
 		.select(column)
 		.where(column, '=', value as any)
@@ -91,7 +91,7 @@ export const insertRow = async <Table extends AnyTable>(
 	table: Table,
 	insertion: TableInsertion<Table>,
 ): Promise<Table extends IdentifiableTableName ? number : undefined> =>
-	xaro.db
+	database
 		.insertInto(table)
 		.values(insertion)
 		.executeTakeFirst()
@@ -128,7 +128,7 @@ async function _insert<Table extends AnyTable>(
 	const withIdColumn = identifiableTableNames.has(table as any);
 	const many = Array.isArray(insertionOrInsertions);
 
-	const query = xaro.db.insertInto(table).values(insertionOrInsertions);
+	const query = database.insertInto(table).values(insertionOrInsertions);
 
 	if (many) {
 		if (withIdColumn)
@@ -155,7 +155,7 @@ export const insertRowOnConflictDoNothing = async <Table extends AnyTable>(
 	table: Table,
 	insertion: TableInsertion<Table>,
 ): Promise<Table extends IdentifiableTableName ? number | undefined : undefined> =>
-	xaro.db
+	database
 		.insertInto(table)
 		.values(insertion)
 		.onConflict((cb) => cb.doNothing())

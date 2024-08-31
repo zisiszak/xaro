@@ -25,7 +25,6 @@ import type {
 	SortingTagTableSchema,
 	UserMediaStatsTable,
 	UserMediaStatsTableSchema,
-	UsersToPlatformsTable,
 	UserTable,
 	UserTableSchema,
 	UserToFileTable,
@@ -36,6 +35,7 @@ import type {
 	UserToPlatformCommunityTableSchema,
 	UserToPlatformProfileTable,
 	UserToPlatformProfileTableSchema,
+	UserToPlatformTable,
 	UserToPlatformTableSchema,
 } from './database.tables.js';
 
@@ -56,7 +56,7 @@ export interface DatabaseSchema {
 	[UserToFileTable.name]: UserToFileTableSchema;
 	[UserToPlatformCommunityTable.name]: UserToPlatformCommunityTableSchema;
 	[UserToPlatformProfileTable.name]: UserToPlatformProfileTableSchema;
-	[UsersToPlatformsTable.name]: UserToPlatformTableSchema;
+	[UserToPlatformTable.name]: UserToPlatformTableSchema;
 	[UserMediaStatsTable.name]: UserMediaStatsTableSchema;
 }
 

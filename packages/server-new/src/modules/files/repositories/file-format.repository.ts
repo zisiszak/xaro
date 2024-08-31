@@ -1,25 +1,26 @@
-import { xaro } from '~/index.js';
+import { database } from '~/index.js';
 import { type TableInsertion, type TableSelection } from '~/modules/database.schema.js';
 import { insert } from '~/shared/index.js';
 import { type NonEmptyArray } from '~/utils/types.js';
-import { type FileExtension } from '../models/file-format.model.js';
+import { type FileExtension } from '../models/index.js';
 
 type FileFormatSelection = TableSelection<'FileFormat'>;
 type FileFormatInsertion = TableInsertion<'FileFormat'>;
 
 export interface FileFormatRepository {
-	/** cached */
-	findAllByExtension(
-		extension: FileExtension,
-	): Promise<NonEmptyArray<FileFormatSelection> | undefined>;
-	/** cached */
-	findByID(fileFormatID: number): Promise<FileFormatSelection | undefined>;
-
 	save(fileFormat: FileFormatInsertion): Promise<number>;
 	save(fileFormats: FileFormatInsertion[]): Promise<number[]>;
 
 	saveOrUpdate(fileFormat: FileFormatInsertion): Promise<number>;
 	saveOrUpdate(fileFormats: FileFormatInsertion[]): Promise<number[]>;
+
+	/** cached */
+	findAllByExtension(
+		extension: FileExtension,
+	): Promise<NonEmptyArray<FileFormatSelection> | undefined>;
+
+	/** cached */
+	findByID(fileFormatID: number): Promise<FileFormatSelection | undefined>;
 }
 
 type ExtensionToFormatsMap = Map<FileExtension, FileFormatSelection[]>;
@@ -53,7 +54,7 @@ class FileFormatRepositoryCache {
 	}
 
 	update(): Promise<void> {
-		this._updatePromise = xaro.db
+		this._updatePromise = database
 			.selectFrom('FileFormat')
 			.selectAll()
 			.execute()
@@ -103,7 +104,7 @@ export const fileFormatRepository: FileFormatRepository = {
 	async saveOrUpdate(fileFormat) {
 		const many = Array.isArray(fileFormat);
 
-		const query = xaro.db
+		const query = database
 			.insertInto('FileFormat')
 			.values(fileFormat)
 			.onConflict((cb) =>

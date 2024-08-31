@@ -1,17 +1,43 @@
-import { xaro } from '~/index.js';
-import { type TableInsertion, type TableSelection } from '~/modules/database.schema.js';
+import { database } from '~/index.js';
+import { type TableInsertion } from '~/modules/database.schema.js';
 import { findByID, insert } from '~/shared/index.js';
+import { type PlatformContentMetadata, type PlatformMediaSourceRecord } from '../models/index.js';
 
-type PlatformMediaSourceSelection = TableSelection<'PlatformMediaSource'>;
-type PlatformMediaSourceInsertion = TableInsertion<'PlatformMediaSource'>;
+interface UpdateData {
+	platformCommunityID?: number | null;
+	platformProfileID?: number | null;
+	metadata?: PlatformContentMetadata;
+	sourceUrl?: string | null;
+}
+type OptionalInsertionData = UpdateData;
+
+const insertionDataToInsertable = (
+	platformID: number,
+	sourceId: string,
+	{
+		platformCommunityID = null,
+		platformProfileID = null,
+		metadata = {},
+		sourceUrl = null,
+	}: OptionalInsertionData = {},
+): TableInsertion<'PlatformMediaSource'> => ({
+	platformID,
+	sourceId,
+	platformCommunityID,
+	platformProfileID,
+	sourceUrl,
+	metadata: JSON.stringify(metadata),
+});
 
 export interface PlatformMediaSourceRepository {
-	findByID(platformMediaSourceID: number): Promise<PlatformMediaSourceSelection | undefined>;
+	save(platformID: number, sourceId: string, data?: OptionalInsertionData): Promise<number>;
+
+	findByID(platformMediaSourceID: number): Promise<PlatformMediaSourceRecord | undefined>;
+
 	findBySourceID(
 		platformID: number,
 		sourceID: string,
-	): Promise<PlatformMediaSourceSelection | undefined>;
-	insert(platformMediaSource: PlatformMediaSourceInsertion): Promise<number>;
+	): Promise<PlatformMediaSourceRecord | undefined>;
 }
 
 export const platformMediaSourceRepository: PlatformMediaSourceRepository = {
@@ -19,13 +45,13 @@ export const platformMediaSourceRepository: PlatformMediaSourceRepository = {
 		return findByID('PlatformMediaSource', platformMediaSourceID);
 	},
 	async findBySourceID(platformID: number, sourceId: string) {
-		return xaro.db
+		return database
 			.selectFrom('PlatformMediaSource')
 			.selectAll()
 			.where((eb) => eb.and({ platformID, sourceId }))
 			.executeTakeFirst();
 	},
-	async insert(platformMediaSource) {
-		return insert('PlatformMediaSource', platformMediaSource);
+	async save(platformID, sourceId, data) {
+		return insert('PlatformMediaSource', insertionDataToInsertable(platformID, sourceId, data));
 	},
 };

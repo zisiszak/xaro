@@ -1,9 +1,9 @@
 import Ffmpeg, { type FfmpegCommand } from 'fluent-ffmpeg';
-import { xaro } from '../../index.js';
+import { logger } from '~/index.js';
 
 export function newFfmpeg(filePath?: string): FfmpegCommand {
 	const ffmpeg = Ffmpeg(filePath, {
-		logger: xaro.log,
+		logger: logger,
 	});
 
 	if (process.env.FFMPEG_PATH) ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH);

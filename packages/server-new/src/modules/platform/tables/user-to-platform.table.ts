@@ -10,7 +10,7 @@ export interface UserToPlatformTableSchema {
 	platformID: number;
 }
 
-export const UsersToPlatformsTable: DatabaseTable<'UserToPlatform'> = {
+export const UserToPlatformTable: DatabaseTable<'UserToPlatform'> = {
 	name: 'UserToPlatform',
 	compiledCreateTableQuery: compileTableSchemaQuery<UserToPlatformTableSchema>(
 		'UserToPlatform',
