@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import {
+	aboutUserController,
 	userLoginController,
 	userLogoutController,
 	userRegistrationController,
 } from '~/modules/index.controllers.js';
-import { aboutUserController } from '../../modules/users/controllers/about-user.controller.js';
-import { UserAccessTokenMiddleware } from '../../modules/users/middleware/user-access-token.js';
+import { userAccessTokenMiddleware } from '~/modules/index.middleware.js';
 import { AboutContentController } from '../controllers/about-content.js';
 import { AboutPlatformCommunityController } from '../controllers/about-platform-community.js';
 import { AboutPlatformProfileController } from '../controllers/about-platform-profile.js';
@@ -22,7 +22,7 @@ const router = Router();
 // MIDDLEWARE
 router.all(
 	['/content', '/platform', '/platform-community', '/platform-profile'],
-	UserAccessTokenMiddleware,
+	userAccessTokenMiddleware,
 );
 router.all('/content/:content_id', MediaAccessMiddleware);
 router.all('/platform/:platform_id_or_name', PlatformAccessMiddleware);
@@ -51,7 +51,7 @@ router.all(
 
 /* User: Logout */ router.post('/user/logout', userLogoutController);
 
-/* User: About */ router.get('/user/about', UserAccessTokenMiddleware, aboutUserController);
+/* User: About */ router.get('/user/about', userAccessTokenMiddleware, aboutUserController);
 
 /* Content: All */ router.get('/content', AllMediaController);
 
