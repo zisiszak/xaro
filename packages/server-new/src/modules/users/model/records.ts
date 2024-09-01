@@ -1,4 +1,4 @@
-import { type UserRole } from './user.model.js';
+import { type UserRole } from './user-role.js';
 
 export interface UserRecord {
 	id: number;

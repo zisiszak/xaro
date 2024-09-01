@@ -3,8 +3,8 @@ import type { Express } from 'express';
 import express from 'express';
 import { type Server } from 'http';
 import { logger } from '~/index.js';
+import { UserAccessTokenMiddleware } from '../modules/users/middleware/user-access-token.js';
 import { MediaAccessMiddleware } from './middleware/media-access.js';
-import { UserAccessTokenMiddleware } from './middleware/user-access-token.js';
 import { apiRouter } from './routes/index.js';
 
 export const startHttpServer = (): {

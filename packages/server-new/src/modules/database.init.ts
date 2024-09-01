@@ -22,7 +22,7 @@ import {
 	UserToPlatformCommunityTable,
 	UserToPlatformProfileTable,
 	UserToPlatformTable,
-} from './database.tables.js';
+} from './index.tables.js';
 
 const DATABASE_FILENAME = 'index.db';
 

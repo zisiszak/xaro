@@ -37,7 +37,7 @@ import type {
 	UserToPlatformProfileTableSchema,
 	UserToPlatformTable,
 	UserToPlatformTableSchema,
-} from './database.tables.js';
+} from './index.tables.js';
 
 export interface DatabaseSchema {
 	[MediaTable.name]: MediaTableSchema;

@@ -11,7 +11,7 @@ export const MediaAccessMiddleware: RequestHandler<Params> = async (req, res, ne
 	const mediaID = cleanInt(req.params.media_id);
 	if (typeof mediaID === 'undefined') return void res.status(400).end();
 
-	const { id: userID, role: userRole } = req.userAccessToken!;
+	const { userID: userID, role: userRole } = req.userAccessToken!;
 
 	let hasAccessAndExists: boolean = false;
 	if (userRole === 'admin') {

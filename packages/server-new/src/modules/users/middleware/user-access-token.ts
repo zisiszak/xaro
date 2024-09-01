@@ -32,7 +32,7 @@ export const UserAccessTokenMiddleware: RequestHandler = (req, res, next) => {
 	}
 
 	return userRepository
-		.findByID(user.id)
+		.findByID(user.userID)
 		.then((data) => {
 			if (!data) {
 				res.status(403).end();

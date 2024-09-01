@@ -6,7 +6,7 @@ import {
 } from '~/modules/database.schema.js';
 import { insert } from '~/shared/index.js';
 import { parseIntBool, toIntBool } from '~/utils/int-bool.js';
-import { type UserMediaStatsRecord } from '../models/records.js';
+import { type UserMediaStatsRecord } from '../model/records.js';
 import { UserMediaStatsTable } from '../tables/user-media-stats.table.js';
 
 interface UpdateData {

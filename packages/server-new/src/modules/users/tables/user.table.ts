@@ -1,6 +1,6 @@
 import { sql } from 'kysely';
 import { type DatabaseTable, type TableProtocol, compileTableSchemaQuery } from '~/shared/index.js';
-import { type UserRole } from '../models/user.model.js';
+import { type UserRole } from '../model/user-role.js';
 
 export interface UserTableSchema extends TableProtocol.Identifiable, TableProtocol.AutoDateAdded {
 	username: string;

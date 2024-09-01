@@ -1,19 +1,21 @@
 import { Router } from 'express';
+import {
+	userLoginController,
+	userLogoutController,
+	userRegistrationController,
+} from '~/modules/index.controllers.js';
+import { aboutUserController } from '../../modules/users/controllers/about-user.controller.js';
+import { UserAccessTokenMiddleware } from '../../modules/users/middleware/user-access-token.js';
 import { AboutContentController } from '../controllers/about-content.js';
 import { AboutPlatformCommunityController } from '../controllers/about-platform-community.js';
 import { AboutPlatformProfileController } from '../controllers/about-platform-profile.js';
 import { AboutPlatformController } from '../controllers/about-platform.js';
-import { AboutUserController } from '../controllers/about-user.js';
 import { AllMediaController } from '../controllers/all-media.js';
-import { UserLoginController } from '../controllers/user-login.js';
-import { UserLogoutController } from '../controllers/user-logout.js';
-import { UserRegistrationController } from '../controllers/user-registration.js';
 import { BasicAuthMiddleware } from '../middleware/basic-auth.js';
 import { MediaAccessMiddleware } from '../middleware/media-access.js';
 import { PlatformAccessMiddleware } from '../middleware/platform-access.js';
 import { PlatformCommunityAccessMiddleware } from '../middleware/platform-community-access.js';
 import { PlatformProfileAccessMiddleware } from '../middleware/platform-profile-access.js';
-import { UserAccessTokenMiddleware } from '../middleware/user-access-token.js';
 
 const router = Router();
 
@@ -42,14 +44,14 @@ router.all(
 /* User: Registration */ router.post(
 	'/user/register',
 	BasicAuthMiddleware,
-	UserRegistrationController,
+	userRegistrationController,
 );
 
-/* User: Login */ router.post('/user/login', BasicAuthMiddleware, UserLoginController);
+/* User: Login */ router.post('/user/login', BasicAuthMiddleware, userLoginController);
 
-/* User: Logout */ router.post('/user/logout', UserLogoutController);
+/* User: Logout */ router.post('/user/logout', userLogoutController);
 
-/* User: About */ router.get('/user/about', UserAccessTokenMiddleware, AboutUserController);
+/* User: About */ router.get('/user/about', UserAccessTokenMiddleware, aboutUserController);
 
 /* Content: All */ router.get('/content', AllMediaController);
 
