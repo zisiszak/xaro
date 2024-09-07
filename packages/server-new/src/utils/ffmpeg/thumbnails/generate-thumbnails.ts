@@ -1,4 +1,4 @@
-import { isError, newError, type GenericError } from 'exitus';
+import { exerr, isExerr, type GenericExerr } from 'exitus';
 import type Ffmpeg from 'fluent-ffmpeg';
 import path, { extname } from 'path';
 import { sequentialAsync, type DeepFreeze } from '~/utils/index.js';
@@ -45,7 +45,7 @@ export async function generateThumbnails({
 			timestamps && (props.timestamps = timestamps);
 			count && (props.count = count);
 
-			return new Promise<GeneratedThumbnail | GenericError>((resolve) => {
+			return new Promise<GeneratedThumbnail | GenericExerr>((resolve) => {
 				try {
 					ffmpeg
 						.input(filePath)
@@ -67,7 +67,7 @@ export async function generateThumbnails({
 							});
 						});
 				} catch (err) {
-					const outcome = newError({
+					const outcome = exerr({
 						message: 'Unexpected error while attempting screenshot via ffmpeg.',
 						context: {
 							fileName: filename,
@@ -76,7 +76,6 @@ export async function generateThumbnails({
 							count,
 							index,
 						},
-						log: 'error',
 						caughtException: err,
 					});
 					resolve(outcome);
@@ -85,5 +84,5 @@ export async function generateThumbnails({
 		},
 		configs,
 		true,
-	).then((results) => results.filter(<T>(v: T | GenericError): v is T => !isError(v)));
+	).then((results) => results.filter(<T>(v: T | GenericExerr): v is T => !isExerr(v)));
 }

@@ -1,9 +1,6 @@
-import { database } from '~/index.js';
-import {
-	insertRowOnConflictDoNothing,
-	singleDeletionResultAsNullOrUndefined,
-} from '~/shared/index.js';
-import { type UserToMediaRecord } from '../models/index.js';
+import { database, logger } from '~/index.js';
+import { type TableSelection } from '~/modules/database.schema.js';
+import { insertRowOnConflictDoNothing } from '~/shared/index.js';
 import { UserToMediaTable } from '../tables/user-to-media.table.js';
 
 const TABLE = UserToMediaTable.name;
@@ -12,43 +9,32 @@ export interface UserToMediaRepository {
 	/**
 	 * Inserts a new row, linking the provided `userID` and `mediaID`.
 	 * If there is an existing link, no changes are made.
-	 *
-	 * @returns `undefined` on the creation of a new link.
-	 * @returns `null` if the link already exists (no change).
 	 */
-	save(userID: number, mediaID: number): Promise<undefined | null>;
+	save: (userID: number, mediaID: number) => Promise<void>;
 
 	/**
 	 * Removes the row linking the provided `userID` and `mediaID`, if it exists.
-	 *
-	 * @returns `undefined` on deletion of the matching row.
-	 * @returns `null` when no matching row is found (no change).
 	 */
-	remove(userID: number, mediaID: number): Promise<undefined | null>;
+	remove: (userID: number, mediaID: number) => Promise<void>;
 
-	find(userID: number, mediaID: number): Promise<UserToMediaRecord | undefined>;
+	find: (userID: number, mediaID: number) => Promise<TableSelection<'UserToMedia'> | undefined>;
 }
 
 export const userToMediaRepository: UserToMediaRepository = {
-	async save(userID, mediaID) {
-		const existing = await this.find(userID, mediaID).then(Boolean);
-		if (existing) return null;
-
-		return insertRowOnConflictDoNothing(TABLE, { userID, mediaID });
-	},
-	async remove(userID, mediaID) {
-		return database
+	save: async (userID, mediaID) => insertRowOnConflictDoNothing(TABLE, { userID, mediaID }),
+	remove: async (userID, mediaID) => {
+		await database
 			.deleteFrom(TABLE)
 			.where((eb) => eb.and({ userID, mediaID }))
-			.executeTakeFirst()
-			.then(singleDeletionResultAsNullOrUndefined);
+			.limit(1)
+			.executeTakeFirst();
+		logger.info({ userID, mediaID }, `User linked to Media.`);
 	},
-	async find(userID, mediaID) {
-		return database
+	find: async (userID, mediaID) =>
+		database
 			.selectFrom(TABLE)
 			.selectAll()
 			.where((eb) => eb.and({ userID, mediaID }))
 			.limit(1)
-			.executeTakeFirst();
-	},
+			.executeTakeFirst(),
 };

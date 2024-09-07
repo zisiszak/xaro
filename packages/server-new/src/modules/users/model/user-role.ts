@@ -2,7 +2,7 @@ export type UserRole = (typeof UserRoleEnum)[keyof typeof UserRoleEnum];
 export const UserRoleEnum = {
 	Admin: 1,
 	Standard: 2,
-};
+} as const;
 
 const userRolesSet: Set<UserRole> = new Set(Object.values(UserRoleEnum));
 

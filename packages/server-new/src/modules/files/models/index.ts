@@ -81,5 +81,5 @@ export type FileOrigin =
 	| DownloadedFileOrigin;
 
 export type FileMetadata = FileFormatMetadata & {
-	originalFilename?: string;
+	originalFilename?: string | null;
 };

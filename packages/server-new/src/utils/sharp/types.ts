@@ -1,7 +1,17 @@
-const outputFormats = ['.jpeg', '.png', '.webp', '.gif', '.avif', '.heif'] as const;
-export type OutputFormat = (typeof outputFormats)[number];
+import { type ResizeOptions } from 'sharp';
 
-export type FormatOptions<Format extends OutputFormat> = {
+const outputFormats = ['.jpeg', '.png', '.webp', '.gif', '.avif', '.heif'] as const;
+export type ImageOutputFormat = (typeof outputFormats)[number];
+
+export type ImageResizeSetting =
+	| number
+	| {
+			options?: ResizeOptions;
+			width?: number;
+			height?: number;
+	  };
+
+export type ImageFormatOptions<Format extends ImageOutputFormat> = {
 	format: Format;
 } & (Format extends '.jpeg'
 	? {

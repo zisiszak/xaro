@@ -30,7 +30,7 @@ export interface UserToFileRepository {
 
 export const userToFileRepository: UserToFileRepository = {
 	async save(userID, originalFileID) {
-		return insertRowOnConflictDoNothing(TABLE, {
+		await insertRowOnConflictDoNothing(TABLE, {
 			originalFileID,
 			userID,
 		});

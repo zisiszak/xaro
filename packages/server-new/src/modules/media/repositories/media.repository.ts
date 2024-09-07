@@ -6,7 +6,7 @@ import {
 	type NotInValueFilter,
 } from '~/shared/database/types.value-filters.js';
 import { findByID, insert } from '~/shared/index.js';
-import { type FileToMediaRelationship } from '../models/constants.js';
+import { type FileToMediaRelationship } from '../models/file-to-media.js';
 
 type MediaSelection = TableSelection<'Media'>;
 type MediaInsertion = TableInsertion<'Media'>;

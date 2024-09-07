@@ -1,4 +1,4 @@
-import { type ColumnType, type JSONColumnType, sql } from 'kysely';
+import { type JSONColumnType, sql } from 'kysely';
 import {
 	type DatabaseTable,
 	type TableProtocol,
@@ -8,16 +8,20 @@ import {
 import { type FileMetadata } from '../models/index.js';
 
 /** A reference to any file in the filesystem */
-export interface FileTableSchema extends TableProtocol.AutoDateAdded, TableProtocol.Identifiable {
+export interface FileTableSchema
+	extends TableProtocol.AutoDateAdded,
+		TableProtocol.Identifiable,
+		TableProtocol.Trashable {
 	originalFileID: number | null;
+	generatedFromFileID: number | null;
 	kind: 'original' | 'optimised';
+	label: string | null;
 	libraryPath: string | null;
 	formatID: number;
 	size: number;
 	fileHash: string;
 	dataHash: string | null;
 	metadata: JSONColumnType<FileMetadata, string | undefined>;
-	dateTrashed: ColumnType<IntBool, undefined>;
 }
 
 export const FileTable: DatabaseTable<'File'> = {
@@ -29,9 +33,10 @@ export const FileTable: DatabaseTable<'File'> = {
 			modifyLastColumnEnd: sql`,
 		UNIQUE(fileHash, size, formatID),
 		CHECK(kind IN ('original', 'optimised')),
+		UNIQUE(originalFileID, label, generatedFromFileID),
 		CHECK(
-			(kind = 'original' AND originalFileID IS NULL)
-			OR originalFileID IS NOT NULL
+			(kind = 'original' AND originalFileID IS NULL) OR
+			(kind = 'optimised' AND originalFileID IS NOT NULL)
 		)`,
 		},
 		[
@@ -45,8 +50,18 @@ export const FileTable: DatabaseTable<'File'> = {
 					.onDelete('restrict'),
 		],
 		['kind', 'text', (cb) => cb.notNull()],
+		['label', 'text'],
 		[
 			'originalFileID',
+			'integer',
+			(cb) =>
+				cb
+					.references(referenceForeignTableID('File'))
+					.onDelete('restrict')
+					.onUpdate('restrict'),
+		],
+		[
+			'generatedFromFileID',
 			'integer',
 			(cb) =>
 				cb

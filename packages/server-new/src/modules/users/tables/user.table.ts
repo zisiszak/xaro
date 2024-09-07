@@ -16,7 +16,7 @@ export const UserTable: DatabaseTable<'User'> = {
 		['Identifiable', 'AutoDateAdded'],
 		{
 			modifyLastColumnEnd: sql`, CHECK(
-		role in ('admin', 'standard')
+		role in (1, 2)
 	),
 	CHECK(
 		(
@@ -31,7 +31,7 @@ export const UserTable: DatabaseTable<'User'> = {
 	)`,
 		},
 		['username', 'text', (cb) => cb.notNull().unique()],
-		['role', 'text', (cb) => cb.notNull()],
+		['role', 'integer', (cb) => cb.notNull()],
 		['passwordHash', 'text'],
 		['passwordSalt', 'text'],
 	),

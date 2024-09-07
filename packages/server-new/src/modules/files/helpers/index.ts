@@ -1,3 +1,3 @@
-export * from './get-file-format-info.js';
-export * from './get-image-file-format-metadata.js';
-export * from './get-video-file-format-metadata.js';
+export * from './read-file-format-info.js';
+export * from './read-image-file-format-metadata.js';
+export * from './read-video-file-format-metadata.js';

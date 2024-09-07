@@ -1,13 +1,13 @@
 import { defaultsMerger } from '~/utils/index.js';
-import { type FormatOptions } from './types.js';
+import { type ImageFormatOptions } from './types.js';
 
 const defaultJpegFormatOptions = {
 	format: '.jpeg',
 	quality: 80,
 	progressive: false,
-} as const satisfies FormatOptions<'.jpeg'>;
+} as const satisfies ImageFormatOptions<'.jpeg'>;
 export const parseJpegFormatOptions = defaultsMerger<
-	FormatOptions<'.jpeg'>,
+	ImageFormatOptions<'.jpeg'>,
 	typeof defaultJpegFormatOptions
 >({
 	defaults: defaultJpegFormatOptions,
@@ -17,9 +17,9 @@ const defaultPngFormatOptions = {
 	format: '.png',
 	compressionLevel: 6,
 	progressive: false,
-} as const satisfies FormatOptions<'.png'>;
+} as const satisfies ImageFormatOptions<'.png'>;
 export const parsePngFormatOptions = defaultsMerger<
-	FormatOptions<'.png'>,
+	ImageFormatOptions<'.png'>,
 	typeof defaultPngFormatOptions
 >({
 	defaults: defaultPngFormatOptions,
@@ -31,9 +31,9 @@ const defaultWebpFormatOptions = {
 	nearLossless: false,
 	quality: 80,
 	smartSubsample: false,
-} as const satisfies FormatOptions<'.webp'>;
+} as const satisfies ImageFormatOptions<'.webp'>;
 export const parseWebpFormatOptions = defaultsMerger<
-	FormatOptions<'.webp'>,
+	ImageFormatOptions<'.webp'>,
 	typeof defaultWebpFormatOptions
 >({
 	defaults: defaultWebpFormatOptions,
@@ -42,7 +42,7 @@ export const parseWebpFormatOptions = defaultsMerger<
 const defaultGifFormatOptions = {
 	format: '.gif',
 	reuse: false,
-} as const satisfies FormatOptions<'.gif'>;
+} as const satisfies ImageFormatOptions<'.gif'>;
 export const parseGifFormatOptions = defaultsMerger({
 	defaults: defaultGifFormatOptions,
 	defaultOnTypes: {
@@ -53,7 +53,7 @@ export const parseGifFormatOptions = defaultsMerger({
 const defaultAvifFormatOptions = {
 	format: '.avif',
 	quality: 65,
-} as const satisfies FormatOptions<'.avif'>;
+} as const satisfies ImageFormatOptions<'.avif'>;
 export const parseAvifFormatOptions = defaultsMerger({
 	defaults: defaultAvifFormatOptions,
 });

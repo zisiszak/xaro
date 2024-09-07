@@ -1,5 +1,5 @@
-import { newError } from 'exitus';
-import path from 'path';
+import { exerr } from 'exitus';
+import { join } from 'path';
 import sharp, { type OutputInfo } from 'sharp';
 import { trueBasename } from '~/utils/index.js';
 import {
@@ -9,47 +9,52 @@ import {
 	parsePngFormatOptions,
 	parseWebpFormatOptions,
 } from './format-options.js';
-import { type FormatOptions, type OutputFormat, type OutputOptions } from './types.js';
+import {
+	type ImageFormatOptions,
+	type ImageOutputFormat,
+	type ImageResizeSetting,
+	type OutputOptions,
+} from './types.js';
 
-export type ConvertImageProps<Format extends OutputFormat> = {
+export type ConvertImageProps<Format extends ImageOutputFormat> = {
 	inputPath: string;
-	formatOptions: FormatOptions<Format>;
-	resize?: {
-		width?: number;
-		height?: number;
-	};
+	formatOptions: ImageFormatOptions<Format>;
+	resize?: ImageResizeSetting;
 } & OutputOptions;
 
-export async function convertImage<Format extends OutputFormat, Output extends OutputOptions>({
-	inputPath: inputFilePath,
+export async function convertImage<Format extends ImageOutputFormat, Output extends OutputOptions>({
+	inputPath,
 	outputDir,
 	outputFilename,
 	formatOptions,
 	toBuffer,
 	resize,
-}: ConvertImageProps<Format>): Promise<Output['toBuffer'] extends true ? Buffer : OutputInfo> {
+}: ConvertImageProps<Format>): Promise<
+	Output['toBuffer'] extends true ? Buffer : OutputInfo & { outputFilePath: string }
+> {
 	if ((!toBuffer && !outputDir) || !outputFilename) {
-		throw newError({
+		throw exerr({
 			message:
 				'Output filename and directory are both required when not outputting to a Buffer.',
-			log: 'error',
 			context: {
-				inputPath: inputFilePath,
+				inputPath: inputPath,
 			},
 		});
 	}
 
-	let command = sharp(inputFilePath);
+	let command = sharp(inputPath);
 
-	if (resize) {
+	if (typeof resize === 'number') {
+		command = command.resize(resize, resize, { fit: 'inside' });
+	} else if (resize) {
 		const { width, height } = resize;
-		command = command.resize(width, height);
+		command = command.resize(width, height, resize.options);
 	}
 
 	switch (formatOptions.format) {
 		case '.jpeg': {
 			const { quality, progressive } = parseJpegFormatOptions(
-				formatOptions as FormatOptions<'.jpeg'>,
+				formatOptions as ImageFormatOptions<'.jpeg'>,
 			);
 			command = command.jpeg({
 				quality,
@@ -59,7 +64,7 @@ export async function convertImage<Format extends OutputFormat, Output extends O
 		}
 
 		case '.gif': {
-			const { reuse } = parseGifFormatOptions(formatOptions as FormatOptions<'.gif'>);
+			const { reuse } = parseGifFormatOptions(formatOptions as ImageFormatOptions<'.gif'>);
 			command = command.gif({
 				reuse,
 			});
@@ -68,7 +73,7 @@ export async function convertImage<Format extends OutputFormat, Output extends O
 
 		case '.png': {
 			const { compressionLevel, progressive } = parsePngFormatOptions(
-				formatOptions as FormatOptions<'.png'>,
+				formatOptions as ImageFormatOptions<'.png'>,
 			);
 			command = command.png({
 				compressionLevel,
@@ -78,7 +83,7 @@ export async function convertImage<Format extends OutputFormat, Output extends O
 		}
 		case '.webp': {
 			const { quality, smartSubsample, lossless, nearLossless } = parseWebpFormatOptions(
-				formatOptions as FormatOptions<'.webp'>,
+				formatOptions as ImageFormatOptions<'.webp'>,
 			);
 			command = command.webp({
 				quality,
@@ -90,7 +95,9 @@ export async function convertImage<Format extends OutputFormat, Output extends O
 		}
 
 		case '.avif': {
-			const { quality } = parseAvifFormatOptions(formatOptions as FormatOptions<'.avif'>);
+			const { quality } = parseAvifFormatOptions(
+				formatOptions as ImageFormatOptions<'.avif'>,
+			);
 			command = command.avif({
 				quality,
 			});
@@ -98,30 +105,33 @@ export async function convertImage<Format extends OutputFormat, Output extends O
 		}
 
 		case '.heif':
-			throw newError({
+			throw exerr({
 				message: 'Output format selected has not yet been implemented.',
-				log: 'error',
 				context: {
 					outputFormat: formatOptions.format,
-					inputFilePath,
+					inputFilePath: inputPath,
 				},
 			});
 		default:
-			throw newError({
+			throw exerr({
 				message: 'Unsupported output format.',
-				log: 'warn',
 				context: {
 					outputFormat: formatOptions.format,
-					inputFilePath,
+					inputFilePath: inputPath,
 				},
 			});
 	}
 
-	return (
-		toBuffer
-			? command.toBuffer()
-			: command.toFile(
-					path.join(outputDir, trueBasename(outputFilename) + formatOptions.format),
-				)
-	) as Promise<Output['toBuffer'] extends true ? Buffer : OutputInfo>;
+	const outputFilePath = join(outputDir, trueBasename(outputFilename) + formatOptions.format);
+
+	if (toBuffer)
+		return command.toBuffer() as Promise<
+			Output['toBuffer'] extends true ? Buffer : OutputInfo & { outputFilePath: string }
+		>;
+	return command.toFile(outputFilePath).then((output) => ({
+		...output,
+		outputFilePath,
+	})) as Promise<
+		Output['toBuffer'] extends true ? Buffer : OutputInfo & { outputFilePath: string }
+	>;
 }

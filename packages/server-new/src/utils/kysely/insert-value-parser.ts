@@ -1,4 +1,4 @@
-import { newError } from 'exitus';
+import { exerr } from 'exitus';
 import { type Guard } from 'is-guard';
 import { type Insertable } from 'kysely';
 
@@ -24,7 +24,7 @@ export function createInsertionValueParser<Schema, Raw = Insertable<Schema>>({
 		value: Raw extends Insertable<Schema> ? Insertable<Schema> : Raw,
 	): Insertable<Schema> => {
 		if (guard && !guard(value)) {
-			throw newError({ message: "Insert value doesn't match expected type." });
+			throw exerr({ message: "Insert value doesn't match expected type." });
 		}
 		if (parser !== null) {
 			return parser(value as Raw);

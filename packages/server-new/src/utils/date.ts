@@ -1,4 +1,4 @@
-import { newError } from 'exitus';
+import { exerr } from 'exitus';
 import { logger } from '~/index.js';
 
 const millisecond_epoch_min = 10000000000;
@@ -24,7 +24,7 @@ export function getUtcSeconds(
 		return date.getUTCSeconds();
 	} catch (err) {
 		logger.error(
-			newError({
+			exerr({
 				message: 'Failed to parse date value.',
 				caughtException: err,
 				context: {

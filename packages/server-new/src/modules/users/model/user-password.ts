@@ -1,4 +1,4 @@
-import { generateHashFromString, generateSalt } from '~/utils/hash-string.js';
+import { generateSalt, hashString } from '~/utils/hash-string.js';
 
 const PASSWORD_HASHING_ALGORITHM: string = 'sha256';
 const GENERATED_SALT_LENGTH: number = 16;
@@ -47,4 +47,4 @@ export function assertValidPassword(password: string): asserts password is strin
 export const generatePasswordSalt = (): string => generateSalt(GENERATED_SALT_LENGTH);
 
 export const hashPassword = (password: string, salt: string): string =>
-	generateHashFromString(password + salt, PASSWORD_HASHING_ALGORITHM);
+	hashString(password + salt, PASSWORD_HASHING_ALGORITHM);

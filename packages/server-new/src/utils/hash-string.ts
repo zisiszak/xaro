@@ -13,6 +13,6 @@ export function generateSalt(length: number = 16): string {
  * @param algorithm - `node:crypto` hash algorithm to use
  * @returns - An object with the generated salt and hash.
  */
-export function generateHashFromString(string: string, algorithm: string): string {
+export function hashString(string: string, algorithm: string): string {
 	return createHash(algorithm).update(string).digest('hex');
 }

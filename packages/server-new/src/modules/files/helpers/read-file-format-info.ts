@@ -6,10 +6,10 @@ import {
 	type FileFormatMetadata,
 } from '../models/index.js';
 import { fileFormatRepository } from '../repositories/index.js';
-import { getImageFileFormatMetadata } from './get-image-file-format-metadata.js';
-import { getVideoFileFormatMetadata } from './get-video-file-format-metadata.js';
+import { readImageFileFormatMetadata } from './read-image-file-format-metadata.js';
+import { readVideoFileFormatMetadata } from './read-video-file-format-metadata.js';
 
-export const getFileFormatInfo = async (
+export const readFileFormatInfo = async (
 	filePath: string,
 ): Promise<{
 	formatID: number;
@@ -26,10 +26,10 @@ export const getFileFormatInfo = async (
 	let metadata: FileFormatMetadata;
 	switch (category) {
 		case FileFormatCategoryEnum.Image:
-			metadata = getImageFileFormatMetadata(filePath);
+			metadata = readImageFileFormatMetadata(filePath);
 			break;
 		case FileFormatCategoryEnum.Video:
-			metadata = await getVideoFileFormatMetadata(filePath).catch(() => ({}));
+			metadata = await readVideoFileFormatMetadata(filePath).catch(() => ({}));
 			break;
 		default:
 			metadata = {};

@@ -3,8 +3,8 @@ import type { Express } from 'express';
 import express from 'express';
 import { type Server } from 'http';
 import { logger } from '~/index.js';
+import { mediaAccessMiddleware } from '../modules/media/middleware/media-access.middleware.js';
 import { userAccessTokenMiddleware } from '../modules/users/middleware/user-access-token.middleware.js';
-import { MediaAccessMiddleware } from './middleware/media-access.js';
 import { apiRouter } from './routes/index.js';
 
 export const startHttpServer = (): {
@@ -17,7 +17,7 @@ export const startHttpServer = (): {
 
 	expressApp.use('/api', apiRouter);
 
-	expressApp.use('/static.media', userAccessTokenMiddleware, MediaAccessMiddleware);
+	expressApp.use('/static.media', userAccessTokenMiddleware, mediaAccessMiddleware);
 
 	const port = parseInt(process.env.HTTP_PORT);
 	const host = process.env.HTTP_HOSTNAME;

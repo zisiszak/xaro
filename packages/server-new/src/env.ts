@@ -16,11 +16,11 @@ declare global {
 	}
 }
 
-export const setDefaultEnvironmentVariables = () => {
-	process.env.ROOT_DIRECTORY = join(homedir(), 'xaro');
-	process.env.HTTP_HOSTNAME = 'localhost';
-	process.env.HTTP_PORT = '5173';
-	process.env.JWT_SECRET = 'CXZNOREOP10045JCN9NFAKL94NVO5NT8FRNNNR90RNFVCOSN';
+export const setDefaultEnvironmentVariablesIfNotExist = () => {
+	process.env.ROOT_DIRECTORY ??= join(homedir(), 'xaro');
+	process.env.HTTP_HOSTNAME ??= 'localhost';
+	process.env.HTTP_PORT ??= '5173';
+	process.env.JWT_SECRET ??= 'CXZNOREOP10045JCN9NFAKL94NVO5NT8FRNNNR90RNFVCOSN';
 };
 
 const envVarRequiredError = (variable: string): string =>

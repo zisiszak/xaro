@@ -8,3 +8,5 @@ export const FileToMediaRelationshipEnum = {
 } as const;
 export type FileToMediaRelationship =
 	(typeof FileToMediaRelationshipEnum)[keyof typeof FileToMediaRelationshipEnum];
+
+export type FileToMediaLabel = string;

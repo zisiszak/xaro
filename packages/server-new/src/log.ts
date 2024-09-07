@@ -36,7 +36,7 @@ export const newFileAndStdoutLogger = (logFilePath: string): pino.Logger =>
 		transport: {
 			targets: [
 				{
-					target: './log.pino-pretty-transport.ts',
+					target: './log.pino-pretty-transport.js',
 					options: {
 						destination: 1,
 					},

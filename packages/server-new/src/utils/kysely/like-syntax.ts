@@ -1,4 +1,4 @@
-import { newError } from 'exitus';
+import { exerr } from 'exitus';
 
 const percentExp = /%/g;
 const underscoreExp = /_/g;
@@ -11,10 +11,9 @@ export const sqlLIKE = (
 	escape: boolean = true,
 ) => {
 	if (typeof start === 'undefined' && typeof end === 'undefined') {
-		throw newError({
+		throw exerr({
 			message:
 				'A LIKE pattern must include a wildcard character. No start or end wildcard was provided.',
-			log: 'error',
 			context: {
 				str,
 				escape,

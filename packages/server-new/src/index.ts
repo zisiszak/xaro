@@ -1,12 +1,10 @@
 /* eslint-disable prefer-const */
-
-import { exitus } from 'exitus';
 import { type Kysely } from 'kysely';
 import { join } from 'path';
 import type pino from 'pino';
 import { loadConfigArgs } from './config.args.js';
 import { loadConfigFile } from './config.file.js';
-import { setDefaultEnvironmentVariables, validateEnvironmentVariables } from './env.js';
+import { setDefaultEnvironmentVariablesIfNotExist, validateEnvironmentVariables } from './env.js';
 import { startHttpServer } from './http/index.js';
 import {
 	newFileAndStdoutLogger,
@@ -18,7 +16,8 @@ import { connectToDatabase } from './modules/database.init.js';
 import { type DatabaseSchema } from './modules/database.schema.js';
 import { defaultFileFormats } from './modules/files/index.js';
 import { fileFormatRepository } from './modules/files/repositories/file-format.repository.js';
-import { mkdirRecursive } from './utils/fs.js';
+import { fileFS } from './modules/files/repositories/file.fs.js';
+import { mkdirDefaults, mkdirRecursive } from './utils/fs.js';
 
 let pinoLogger: pino.Logger = newStdoutLogger();
 
@@ -28,7 +27,7 @@ export let database: Kysely<DatabaseSchema>;
 
 // Init
 
-setDefaultEnvironmentVariables();
+setDefaultEnvironmentVariablesIfNotExist();
 loadConfigArgs();
 await loadConfigFile();
 
@@ -41,12 +40,12 @@ pinoLogger.flush(() => {
 
 	pinoLogger = newFileAndStdoutLogger(join(process.env.ROOT_DIRECTORY, 'xaro.log'));
 	logger = pinoToServerLog(pinoLogger);
-	exitus.setLogConfig(logger);
 });
 
 database = await connectToDatabase();
 
 await fileFormatRepository.saveOrUpdate(defaultFileFormats);
+await mkdirDefaults(fileFS.tempDirectory, fileFS.filesDirectory);
 
 // 2. Load plugins
 

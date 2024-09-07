@@ -2,7 +2,7 @@ import { database } from '~/index.js';
 import { type TableInsertion, type TableSelection } from '~/modules/database.schema.js';
 import { insert } from '~/shared/index.js';
 import { type NonEmptyArray } from '~/utils/types.js';
-import { type FileExtension } from '../models/index.js';
+import { type FileExtension, type FileFormatCategory } from '../models/index.js';
 
 type FileFormatSelection = TableSelection<'FileFormat'>;
 type FileFormatInsertion = TableInsertion<'FileFormat'>;
@@ -21,6 +21,8 @@ export interface FileFormatRepository {
 
 	/** cached */
 	findByID(fileFormatID: number): Promise<FileFormatSelection | undefined>;
+
+	resolveFormatCategory(fileFormatID: number): Promise<FileFormatCategory>;
 }
 
 type ExtensionToFormatsMap = Map<FileExtension, FileFormatSelection[]>;
@@ -92,6 +94,12 @@ export const fileFormatRepository: FileFormatRepository = {
 	},
 	async findByID(fileFormatID) {
 		return cache.getIdToFormatMap().then((map) => map.get(fileFormatID));
+	},
+	async resolveFormatCategory(fileFormatID) {
+		return this.findByID(fileFormatID).then((format) => {
+			if (!format) throw 'File format ID not found.';
+			return format.category;
+		});
 	},
 	async save(values) {
 		const result = await insert('FileFormat', values);

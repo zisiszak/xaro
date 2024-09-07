@@ -10,7 +10,6 @@ export * from './int-bool.js';
 export * from './json-web-token.js';
 export * from './kysely/index.js';
 export * from './merge-object-defaults.js';
-export * from './readonly-cache.js';
 export * from './reg-exp.js';
 export * from './sanitise.js';
 export * from './sequential-async.js';

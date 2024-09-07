@@ -4,12 +4,13 @@ import {
 	type DatabaseTable,
 	referenceForeignTableID,
 } from '~/shared/index.js';
-import { type FileToMediaRelationship } from '../models/index.js';
+import { type FileToMediaLabel, type FileToMediaRelationship } from '../models/index.js';
 
 export interface FileToMediaTableSchema {
 	originalFileID: number;
 	mediaID: number;
 	relationship: FileToMediaRelationship;
+	label: FileToMediaLabel | null;
 }
 
 export const FileToMediaTable: DatabaseTable<'FileToMedia'> = {
@@ -18,7 +19,7 @@ export const FileToMediaTable: DatabaseTable<'FileToMedia'> = {
 		'FileToMedia',
 		null,
 		{
-			modifyLastColumnEnd: sql`,UNIQUE(originalFileID, mediaID)`,
+			modifyLastColumnEnd: sql`,UNIQUE(originalFileID, mediaID), UNIQUE(mediaID, relationship, label)`,
 		},
 		[
 			'originalFileID',
@@ -41,5 +42,6 @@ export const FileToMediaTable: DatabaseTable<'FileToMedia'> = {
 					.onUpdate('cascade'),
 		],
 		['relationship', 'integer', (cb) => cb.notNull()],
+		['label', 'text'],
 	),
 };

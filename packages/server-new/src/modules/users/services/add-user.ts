@@ -4,7 +4,7 @@ import { assertUserRole, type UserRole } from '../model/user-role.js';
 import { assertValidUsername } from '../model/user-username.js';
 
 /** returns the newly created `userID` */
-export const registerUser = async (
+export const addUser = async (
 	username: string,
 	password: string | undefined,
 	role: UserRole,

@@ -1,6 +1,6 @@
 import { type RequestHandler } from 'express';
-import { fileRepository } from '~/modules/files/index.js';
-import { userRepository } from '~/modules/users/index.js';
+import { fileRepository, userToFileRepository } from '~/modules/files/index.js';
+import { UserRoleEnum } from '~/modules/users/index.js';
 import { cleanInt } from '~/utils/sanitise.js';
 
 export const RequireFileAccessViaID: RequestHandler<
@@ -16,13 +16,13 @@ export const RequireFileAccessViaID: RequestHandler<
 	const fileID = cleanInt(req.params.fileID ?? req.body.fileID ?? req.query.fileID);
 	if (typeof fileID === 'undefined') return void res.status(404).end();
 
-	if (userAccessToken.role === 'admin') {
+	if (userAccessToken.role === UserRoleEnum.Admin) {
 		req.fileID = fileID;
 		next();
 		return;
 	}
 
-	const access = await userRepository.getOriginalFileLink(userAccessToken.userID, fileID);
+	const access = await userToFileRepository.findByAnyFileID(userAccessToken.userID, fileID);
 	if (!access) return void res.status(401).end();
 
 	req.fileID = fileID;
@@ -41,14 +41,17 @@ export const RequireFileAccessViaFilePath: RequestHandler = async (req, res, nex
 	const file = await fileRepository.findByLibraryPath(libraryPath);
 	if (!file || !file.libraryPath) return void res.status(404).end();
 
-	if (userAccessToken.role === 'admin') {
+	if (userAccessToken.role === UserRoleEnum.Admin) {
 		req.fileID = file.id;
 		req.fileLibraryPath = file.libraryPath;
 		next();
 		return;
 	}
 
-	const access = await userRepository.getOriginalFileLink(userAccessToken.userID, file.id);
+	const access = await userToFileRepository.findByOriginalFileID(
+		userAccessToken.userID,
+		file.originalFileID ?? file.id,
+	);
 	if (!access) return void res.status(401).end();
 
 	req.fileID = file.id;

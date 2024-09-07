@@ -15,9 +15,9 @@ import {
 	checkUsernameForValidationErrors,
 	type UsernameValidationError,
 } from '../model/user-username.js';
+import { addUser } from '../services/add-user.js';
 import { authenticateUserCredentials } from '../services/authenticate-user-credentials.js';
 import { isUsernameTaken } from '../services/is-username-taken.js';
-import { registerUser } from '../services/register-user.js';
 
 export interface Status400_InvalidInput {
 	usernameValidationError: UsernameValidationError | null;
@@ -56,7 +56,7 @@ export const userRegistrationController: RequestHandler<never, ResponseBody> = a
 	if (await isUsernameTaken(username)) return void res.status(409).end();
 
 	try {
-		await registerUser(username, password, UserRoleEnum.Standard);
+		await addUser(username, password, UserRoleEnum.Standard);
 
 		const accessTokenPayload = (await authenticateUserCredentials(
 			username,

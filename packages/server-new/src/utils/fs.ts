@@ -1,4 +1,4 @@
-import { type GenericError, isError, newError } from 'exitus';
+import { exerr, type GenericExerr, isExerr } from 'exitus';
 import fs from 'fs';
 import { type Guard, is } from 'is-guard';
 import path from 'path';
@@ -11,15 +11,15 @@ export async function mkdirRecursive(dir: string): Promise<string | undefined> {
 	return fs.promises.mkdir(dir, { recursive: true });
 }
 
-export async function mkdirDefaults(...dirs: string[]): Promise<string[] | GenericError> {
+export async function mkdirDefaults(...dirs: string[]): Promise<string[] | GenericExerr> {
 	return Promise.all(
 		dirs.map(async (dir) => {
-			const isDirectory = await isDir(dir);
+			const isDirectory = await isDir(dir).catch(() => undefined);
 			if (isDirectory === true) return;
 			if (isDirectory === undefined) {
 				return mkdirRecursive(dir);
 			}
-			return newError({ message: `Path is not a directory: ${dir}` });
+			return exerr({ message: `Path is not a directory: ${dir}` });
 		}),
 	).then((result) => result.filter(is.string));
 }
@@ -90,7 +90,7 @@ export async function readAndParseJson<O>(
 		.readFile(path, { encoding })
 		.catch((err) =>
 			Promise.reject(
-				newError({
+				exerr({
 					caughtException: err,
 					message: 'Failed to read file',
 					context: {
@@ -101,30 +101,25 @@ export async function readAndParseJson<O>(
 		)
 		.then(JSON.parse)
 		.catch((err) => {
-			if (isError(err)) {
-				return Promise.reject(err);
-			}
-			return Promise.reject(
-				newError({
-					message: 'Failed to parse JSON.',
-					caughtException: err,
-					context: {
-						path,
-					},
-				}),
-			);
+			if (isExerr(err)) throw err;
+
+			throw exerr({
+				message: 'Failed to parse JSON.',
+				caughtException: err,
+				context: {
+					path,
+				},
+			});
 		})
 		.then((result) => {
 			if (!typeguard(result)) {
-				return Promise.reject(
-					newError({
-						message: 'Parsed JSON does not satisfy guard conditions.',
-						context: {
-							path,
-							typeguard: typeguard.name,
-						},
-					}),
-				);
+				throw exerr({
+					message: 'Parsed JSON does not satisfy guard conditions.',
+					context: {
+						path,
+						typeguard: typeguard.name,
+					},
+				});
 			}
 			return result;
 		});

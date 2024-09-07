@@ -1,105 +1,130 @@
-import { access } from 'fs/promises';
-import path, { extname, join, relative } from 'path';
+import { basename } from 'path';
 import { database } from '~/index.js';
 import { type TableInsertion, type TableSelection } from '~/modules/database.schema.js';
-import { findAllByColumn, findByColumn, findByID, insert } from '~/shared/index.js';
-import { doesPathExist, isDir, mkdirRecursive, moveFile, readFileSize } from '~/utils/fs.js';
+import { insert, unixEpochNow } from '~/shared/index.js';
+import { doesPathExist, isDir, moveFile, readFileSize } from '~/utils/fs.js';
 import { hashFile } from '~/utils/hash-file.js';
-import { getFileFormatInfo } from '../helpers/get-file-format-info.js';
-import { type FileExtension, type FileMetadata } from '../models/index.js';
-
-const MAX_FSFILE_IDS_PER_DIR = 100;
+import { readFileFormatInfo } from '../helpers/read-file-format-info.js';
+import { type FileMetadata } from '../models/index.js';
+import { fileFS } from './file.fs.js';
 
 type FileSelection = TableSelection<'File'>;
-type FsFileInsertion = TableInsertion<'File'>;
+type FileInsertion = TableInsertion<'File'>;
 
-interface FileFS {
-	get filesDirectory(): string;
-	generateImportPath(fsFileID: number, extension: FileExtension): Promise<string>;
-
-	resolveLibraryPath(libraryPath: string): string;
-	toLibraryPath(filePath: string): string;
-
-	/** Resolves with the libraryPath */
-	moveToLibrary(currentFilePath: string, fsFileID: number): Promise<string>;
+interface OriginalFileSaveData {
+	kind: 'original';
+	filePath: string;
+	generatedFromFileID?: number | null;
+	label?: string | null;
+	metadata?: {
+		originalFilename?: string | null;
+	};
 }
-
-const fileFS: FileFS = {
-	get filesDirectory() {
-		return join(process.env.ROOT_DIRECTORY, 'files');
-	},
-	async generateImportPath(fsFileID) {
-		const directory = join(
-			this.filesDirectory,
-			Math.floor(fsFileID / MAX_FSFILE_IDS_PER_DIR).toString(),
-		);
-		await access(directory).catch(() => mkdirRecursive(directory));
-
-		const filename = `${fsFileID.toString().padStart(7, '0')}`;
-
-		const path = join(directory, filename);
-
-		const exists = await access(path)
-			.then(() => true)
-			.catch(() => false);
-		if (exists) throw 'generated file path already exists...';
-
-		return path;
-	},
-	async moveToLibrary(currentPath, fsFileID) {
-		const ext = extname(currentPath) as FileExtension;
-		const newPath = await this.generateImportPath(fsFileID, ext);
-
-		await moveFile(currentPath, newPath);
-
-		return this.toLibraryPath(newPath);
-	},
-	toLibraryPath(filePath) {
-		return relative(this.filesDirectory, filePath);
-	},
-	resolveLibraryPath(libraryPath) {
-		return join(this.filesDirectory, libraryPath);
-	},
-};
+interface OptimisedFileSaveData {
+	kind: 'optimised';
+	filePath: string;
+	originalFileID: number;
+	generatedFromFileID?: number | null;
+	label: string;
+}
 
 export interface FileRepository {
 	/** moves file to into library */
 	save(
-		currentFilePath: string,
-		kind: 'original' | 'optimised',
+		data: OriginalFileSaveData | OptimisedFileSaveData,
 	): Promise<{ fileID: number; isDuplicate: boolean }>;
 
-	findByID(fileID: number): Promise<FileSelection | undefined>;
+	findByID(fileID: number): Promise<(FileSelection & { libraryPath: string }) | undefined>;
 
-	findByLibraryPath(libraryPath: string): Promise<FileSelection | undefined>;
+	findByLibraryPath(
+		libraryPath: string,
+	): Promise<(FileSelection & { libraryPath: string }) | undefined>;
 
-	findAllByHash(kind: 'file' | 'data', hash: string): Promise<FileSelection[]>;
+	findAllByHash(
+		kind: 'file' | 'data',
+		hash: string,
+	): Promise<(FileSelection & { libraryPath: string })[]>;
+
+	findAllOptimisedForOriginalFile(originalFileID: number): Promise<
+		(FileSelection & {
+			label: string;
+			kind: 'optimised';
+			originalFileID: number;
+		})[]
+	>;
 
 	resolveOriginalFileID(fileID: number): Promise<number>;
 
 	resolveOriginalFileIDFromLibraryPath(libraryPath: string): Promise<number>;
+
+	resolveLibraryPathFromID(fileID: number): Promise<string>;
+
+	/** Marks the file as trashed if it isn't already. Returns the current `dateTrashed` */
+	trash(fileID: number): Promise<number>;
+
+	/** Marks the file as not trashed if it isn't already. Returns null */
+	untrash(fileID: number): Promise<void>;
 }
 
 export const fileRepository: FileRepository = {
 	async findByID(fileID) {
-		return findByID('File', fileID);
+		return database
+			.selectFrom('File')
+			.selectAll()
+			.where((eb) => eb.and([eb('id', '=', fileID), eb('libraryPath', 'is not', null)]))
+			.$narrowType<{ libraryPath: string }>()
+			.executeTakeFirst();
 	},
 	async findAllByHash(kind, hash) {
-		return findAllByColumn('File', kind === 'data' ? 'dataHash' : 'fileHash', hash);
+		return database
+			.selectFrom('File')
+			.selectAll()
+			.where((eb) =>
+				eb.and([
+					eb(kind === 'data' ? 'dataHash' : 'fileHash', '=', hash),
+					eb('libraryPath', 'is not', null),
+				]),
+			)
+			.$narrowType<{ libraryPath: string }>()
+			.execute();
 	},
 	async findByLibraryPath(libraryPath) {
-		return findByColumn('File', 'libraryPath', libraryPath);
+		return database
+			.selectFrom('File')
+			.selectAll()
+			.where('libraryPath', '=', libraryPath)
+			.$narrowType<{ libraryPath: string }>()
+			.executeTakeFirst();
 	},
+	async findAllOptimisedForOriginalFile(originalFileID) {
+		return database
+			.selectFrom('File')
+			.selectAll()
+			.where((eb) =>
+				eb.and([
+					eb('originalFileID', '=', originalFileID),
+					eb('kind', '=', 'optimised'),
+					eb('label', 'is not', null),
+				]),
+			)
+			.$narrowType<{
+				label: string;
+				kind: 'optimised';
+				originalFileID: number;
+			}>()
+			.execute();
+	},
+	async save(data) {
+		const { filePath, kind, generatedFromFileID, label } = data;
 
-	async save(currentFilePath, kind: 'original' | 'optimised') {
-		const exists = await doesPathExist(currentFilePath);
+		const exists = await doesPathExist(filePath);
 		if (!exists) throw 'path does not exist or cannot be accessed.';
 
-		const isFile = (await isDir(currentFilePath)) === false;
+		const isFile = (await isDir(filePath)) === false;
 		if (!isFile) throw 'path is a directory.';
 
-		const size = await readFileSize(currentFilePath);
-		const fileHash = await hashFile(currentFilePath);
+		const size = await readFileSize(filePath);
+		const fileHash = await hashFile(filePath);
 
 		const filesWithMatchingHash = await this.findAllByHash('file', fileHash);
 		if (filesWithMatchingHash.length !== 0) {
@@ -110,27 +135,37 @@ export const fileRepository: FileRepository = {
 			if (existingFile) return { fileID: existingFile.id, isDuplicate: true };
 		}
 
-		const { formatID, metadata: formatMetadata } = await getFileFormatInfo(currentFilePath);
+		const { formatID, metadata: formatMetadata } = await readFileFormatInfo(filePath);
 		const metadata: FileMetadata = {
 			...formatMetadata,
-			originalFilename: path.basename(currentFilePath),
+			// originalFilename:
+			// originalFilename === null ? null : (originalFilename ?? path.basename(filePath)),
 		};
 
-		const nullPathInsertion: FsFileInsertion = {
+		if (kind === 'original') {
+			metadata.originalFilename = data.metadata?.originalFilename ?? basename(filePath);
+		}
+
+		const nullPathInsertion: FileInsertion = {
 			fileHash,
 			size,
 			formatID,
 			libraryPath: null,
 			kind,
+			label,
+			generatedFromFileID,
 			metadata: JSON.stringify(metadata),
 		};
 
-		const fileID = await insert('File', nullPathInsertion);
+		if (kind === 'optimised') {
+			nullPathInsertion.originalFileID = data.originalFileID;
+		}
 
+		const fileID = await insert('File', nullPathInsertion);
 		return fileFS
-			.moveToLibrary(currentFilePath, fileID)
+			.moveToLibrary(filePath, fileID)
 			.then(async (libraryPath) => {
-				const oldFilePath = currentFilePath;
+				const oldFilePath = filePath;
 				await database
 					.updateTable('File')
 					.set({ libraryPath })
@@ -164,5 +199,42 @@ export const fileRepository: FileRepository = {
 
 		const originalFileID = file.kind === 'original' ? file.id : file.originalFileID!;
 		return originalFileID;
+	},
+	async resolveLibraryPathFromID(fileID) {
+		return (
+			await database
+				.selectFrom('File')
+				.select('libraryPath')
+				.where((eb) => eb.and([eb('id', '=', fileID), eb('libraryPath', 'is not', null)]))
+				.executeTakeFirstOrThrow()
+		).libraryPath!;
+	},
+
+	async trash(fileID) {
+		const getDateTrashedQuery = database
+			.selectFrom('File')
+			.select('dateTrashed')
+			.where('id', '=', fileID);
+
+		const { dateTrashed: dateTrashedAlready } =
+			await getDateTrashedQuery.executeTakeFirstOrThrow();
+
+		if (dateTrashedAlready !== null) return dateTrashedAlready;
+		await database
+			.updateTable('File')
+			.set('dateTrashed', unixEpochNow as unknown as number)
+			.where('id', '=', fileID)
+			.limit(1)
+			.executeTakeFirst();
+
+		return (await getDateTrashedQuery.executeTakeFirstOrThrow()).dateTrashed!;
+	},
+	async untrash(fileID) {
+		await database
+			.updateTable('File')
+			.set('dateTrashed', null)
+			.where('id', '=', fileID)
+			.limit(1)
+			.executeTakeFirst();
 	},
 };
