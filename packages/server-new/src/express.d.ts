@@ -4,7 +4,7 @@ type PluginModuleReference = `${string}.${string}`;
 declare namespace Express {
 	export interface Request {
 		basicAuth?: import('./utils/index.ts').ParsedBasicAuthHeader;
-		userAccessToken?: import('./modules/users/index.ts').UserAccessTokenPayload;
+		userAccessToken?: import('./modules/user/access-token/index.ts').UserAccessTokenPayload;
 		content?: import('./models/database/tables/index.ts').Content.Selection;
 		mediaID?: number;
 		platform?: import('./models/database/tables/index.ts').Platforms.Selection;
@@ -13,6 +13,7 @@ declare namespace Express {
 		platformCommunityID?: number;
 		platformProfile?: import('./models/database/tables/index.ts').PlatformProfiles.Selection;
 		platformProfileID?: number;
+		originalFileID?: number;
 		fileID?: number;
 		fileLibraryPath?: string;
 	}

@@ -1,11 +1,11 @@
 import { type RequestHandler } from 'express';
 import formidable from 'formidable';
 import { logger } from '~/index.js';
-import { OriginalFile } from '~/modules/files/managers/OriginalFile.js';
-import { fileFS } from '~/modules/files/repositories/file.fs.js';
+import { fsFile } from '~/modules/file/fs-file.js';
+import { OriginalFile } from '~/modules/file/OriginalFile.js';
 import { sequentialAsync } from '~/utils/sequential-async.js';
-import { Media } from '../managers/Media.js';
-import { FileToMediaRelationshipEnum } from '../models/file-to-media.js';
+import { FileToMediaRelationshipEnum } from '../../file-to-media/model.js';
+import { Media } from '../Media.js';
 
 export interface Status201_Uploaded {}
 
@@ -17,7 +17,7 @@ export const uploadMediaController: RequestHandler = async (req, res) => {
 		hashAlgorithm: false,
 		multiples: true,
 		allowEmptyFiles: false,
-		uploadDir: fileFS.tempDirectory,
+		uploadDir: fsFile.tempDirectory,
 		keepExtensions: true,
 		filename: (name, ext) => `${name}${ext}`,
 	});

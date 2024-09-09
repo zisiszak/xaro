@@ -3,9 +3,8 @@ import type { Express } from 'express';
 import express from 'express';
 import { type Server } from 'http';
 import { logger } from '~/index.js';
-import { mediaAccessMiddleware } from '../modules/media/middleware/media-access.middleware.js';
-import { userAccessTokenMiddleware } from '../modules/users/middleware/user-access-token.middleware.js';
-import { apiRouter } from './routes/index.js';
+import { apiRouter } from './routes/api.js';
+import { createStaticRouter } from './routes/static.js';
 
 export const startHttpServer = (): {
 	expressApp: Express;
@@ -16,8 +15,8 @@ export const startHttpServer = (): {
 	expressApp.use(cookieParser());
 
 	expressApp.use('/api', apiRouter);
-
-	expressApp.use('/static.media', userAccessTokenMiddleware, mediaAccessMiddleware);
+	const staticRouter = createStaticRouter();
+	expressApp.use('/static', staticRouter);
 
 	const port = parseInt(process.env.HTTP_PORT);
 	const host = process.env.HTTP_HOSTNAME;

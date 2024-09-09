@@ -1,12 +1,12 @@
 import SQLite from 'better-sqlite3';
 import { Kysely, ParseJSONResultsPlugin, SqliteDialect } from 'kysely';
 import { join } from 'path';
-import { FileTable } from '~/modules/files/tables/file.table.js';
 import { closeDummyDatabase } from '~/shared/index.js';
 import { type DatabaseSchema } from './database.schema.js';
 import {
 	CreatorTable,
 	FileFormatTable,
+	FileTable,
 	FileToMediaTable,
 	MediaTable,
 	MediaToSortingTagTable,

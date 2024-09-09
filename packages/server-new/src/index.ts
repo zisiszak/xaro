@@ -14,9 +14,9 @@ import {
 } from './log.js';
 import { connectToDatabase } from './modules/database.init.js';
 import { type DatabaseSchema } from './modules/database.schema.js';
-import { defaultFileFormats } from './modules/files/index.js';
-import { fileFormatRepository } from './modules/files/repositories/file-format.repository.js';
-import { fileFS } from './modules/files/repositories/file.fs.js';
+import { defaultFileFormats } from './modules/file-format/defaults.js';
+import { fileFormatRepository } from './modules/file-format/sqlite.repository.js';
+import { fsFile } from './modules/file/fs-file.js';
 import { mkdirDefaults, mkdirRecursive } from './utils/fs.js';
 
 let pinoLogger: pino.Logger = newStdoutLogger();
@@ -45,7 +45,7 @@ pinoLogger.flush(() => {
 database = await connectToDatabase();
 
 await fileFormatRepository.saveOrUpdate(defaultFileFormats);
-await mkdirDefaults(fileFS.tempDirectory, fileFS.filesDirectory);
+await mkdirDefaults(fsFile.tempDirectory, fsFile.filesDirectory);
 
 // 2. Load plugins
 
