@@ -2,14 +2,13 @@ import {
 	type DropdownOption,
 	type IdSourceIdentifier,
 	type IdSourceIdentifierMatch,
+	type LoadedPluginModuleInfo,
 	type PluginModuleInfo,
 	type UrlSourceIdentifier,
 	type UrlSourceIdentifierMatch,
 } from './shared.js';
 
-export interface PlaylistExtractorFunctionProps<
-	F extends PlaylistExtractorFeatures = PlaylistExtractorFeatures,
-> {
+export interface PlaylistExtractorFunctionProps<F extends PlaylistExtractorFeatures> {
 	identifier:
 		| (F['acceptsIdIdentifier'] extends true | IdSourceIdentifierMatch
 				? IdSourceIdentifier
@@ -37,9 +36,14 @@ export interface PlaylistExtractorFeatures {
 	itemOrdering?: DropdownOption[];
 }
 
-export interface PlaylistExtractor extends PluginModuleInfo {
-	features: PlaylistExtractorFeatures;
+export interface PlaylistExtractor<F extends PlaylistExtractorFeatures>
+	extends PluginModuleInfo<'playlist-extractor'> {
+	features: F;
+	generic?: boolean;
+	extractor: PlaylistExtractorFunction<F>;
 }
+export type LoadedPlaylistExtractor = PlaylistExtractor<any> &
+	LoadedPluginModuleInfo<'playlist-extractor'>;
 
 // const test = {
 // 	acceptsIdIdentifier: true,

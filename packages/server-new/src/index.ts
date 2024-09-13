@@ -17,6 +17,7 @@ import { type DatabaseSchema } from './modules/database.schema.js';
 import { defaultFileFormats } from './modules/file-format/defaults.js';
 import { fileFormatRepository } from './modules/file-format/sqlite.repository.js';
 import { fsFile } from './modules/file/fs-file.js';
+import { getPluginModule, loadPlugin } from './modules/plugin/load.js';
 import { mkdirDefaults, mkdirRecursive } from './utils/fs.js';
 
 let pinoLogger: pino.Logger = newStdoutLogger();
@@ -48,6 +49,25 @@ await fileFormatRepository.saveOrUpdate(defaultFileFormats);
 await mkdirDefaults(fsFile.tempDirectory, fsFile.filesDirectory);
 
 // 2. Load plugins
+await loadPlugin({
+	name: 'something',
+	displayName: 'Something',
+	modules: {
+		amazing: {
+			kind: 'basic-extractor',
+			displayName: 'Amazing Module',
+			extractor: async () => Promise.resolve(),
+			features: {
+				acceptsIdIdentifier: false,
+				acceptsUrlIdentifier: (url) => url.origin === 'https://google.com',
+			},
+			optional: false,
+		},
+	},
+});
+
+logger.info(getPluginModule('something.amazing'));
+logger.info(getPluginModule('something.not-so-amazing'));
 
 // 3. Start listening
 export const server = startHttpServer();
