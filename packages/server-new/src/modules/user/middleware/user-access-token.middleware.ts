@@ -4,14 +4,10 @@ import { jwt } from '~/utils/json-web-token.js';
 import { User } from '../User.js';
 import { isUserAccessTokenPayload, USER_ACCESS_TOKEN_COOKIE_KEY } from '../access-token/index.js';
 
-export interface Status500_UnexpectedError {}
 export interface Status401_AccessTokenExpired {}
-export interface Status403_UserDoesNotExist {}
+export interface Status410_UserDoesNotExist {}
 
-export type ResponseBody =
-	| Status401_AccessTokenExpired
-	| Status403_UserDoesNotExist
-	| Status500_UnexpectedError;
+export type ResponseBody = Status401_AccessTokenExpired | Status410_UserDoesNotExist;
 
 /**
  * This middleware ensures that the `userAccessToken` property is defined for any request handler that follows.
@@ -27,14 +23,14 @@ export const userAccessTokenMiddleware: RequestHandler<never, ResponseBody> = as
 	if (!cookie) return void res.status(401).end();
 
 	let accessTokenPayload = jwt.decode(cookie, isUserAccessTokenPayload);
-	if (!accessTokenPayload) return void res.status(500).end();
+	if (!accessTokenPayload) return void res.status(401).end();
 	if (accessTokenPayload.expiry < Date.now()) {
 		// TODO: Make this send some context to the client?
 		return void res.status(401).end();
 	}
 
 	const user = await User.getAboutUser(accessTokenPayload.userID);
-	if (!user) return void res.status(403).end();
+	if (!user) return void res.status(410).end();
 
 	if (user.role !== accessTokenPayload.role || user.username !== accessTokenPayload.username) {
 		logger.info(

@@ -7,8 +7,8 @@ export const MAX_PASSWORD_LENGTH: number = 64;
 const INVALID_PASSWORD_CHARS_EXP: RegExp = /([^A-z\d~`!@#$%^&*()\-_=+[{\]}\\|;:'",<.>/\ ])/g;
 
 export interface PasswordValidationError {
-	invalid_length: 'too_long' | 'too_short' | null;
-	invalid_chars: string | null;
+	invalidLength: 'too_long' | 'too_short' | null;
+	invalidChars: string | null;
 }
 export const checkPasswordForValidationErrors = (
 	password: string,
@@ -24,10 +24,10 @@ export const checkPasswordForValidationErrors = (
 
 	if (invalidLength !== null || invalidCharsArray !== null) {
 		return {
-			invalid_chars: invalidCharsArray
+			invalidChars: invalidCharsArray
 				? Array.from(new Set(invalidCharsArray)).join('')
 				: null,
-			invalid_length: invalidLength,
+			invalidLength: invalidLength,
 		};
 	}
 

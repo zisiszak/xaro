@@ -1,0 +1,207 @@
+{
+	"openapi": "3.0.3",
+	"info": {
+		"title": "xaro",
+		"version": "0.0.1"
+	},
+	"servers": [],
+	"components": {
+		"securitySchemes": {
+			"basicHttpAuthentication": {
+				"type": "http",
+				"scheme": "Basic",
+				"description": "Basic HTTP user authentication."
+			},
+			"bearerHttpAuthentication": {
+				"type": "http",
+				"scheme": "bearer",
+				"bearerFormat": "jwt",
+				"description": "Bearer (JWT) HTTP user authentication."
+			}
+		}
+	},
+	"paths": {
+		"/user/register": {
+			"post": {
+				"description": "Creates a new user account.",
+				"security": [
+					{
+						"basicHttpAuthentication": []
+					}
+				],
+				"responses": {
+					"201": {
+						"description": "New user account registered successfully.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"username": {
+											"type": "string"
+										},
+										"userID": {
+											"type": "integer"
+										}
+									}
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Username taken."
+					},
+					"422": {
+						"description": "The request 'Basic' auth is invalid."
+					},
+					"400": {
+						"description": "Invalid registration input.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"properties": {
+										"usernameValidationError": {
+											"nullable": true,
+											"type": "object",
+											"properties": {
+												"invalidLength": {
+													"type": "string",
+													"enum": ["too_long", "too_short"],
+													"nullable": true
+												},
+												"invalidChars": {
+													"type": "string",
+													"nullable": true
+												}
+											}
+										},
+										"passwordValidationError": {
+											"nullable": true,
+											"type": "object",
+											"properties": {
+												"invalidLength": {
+													"type": "string",
+													"nullable": true,
+													"enum": ["too_long", "too_short"]
+												},
+												"invalidChars": {
+													"type": "string",
+													"nullable": true
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "The request does not include a 'Basic' auth header."
+					},
+					"500": {
+						"description": "Unexpected error."
+					}
+				}
+			}
+		},
+		"/user/logout": {
+			"post": {
+				"description": "Logs out the user (removes any authentication tokens assigned to the requester).",
+				"responses": {
+					"205": {
+						"description": "User logged out."
+					}
+				}
+			}
+		},
+		"/user/login": {
+			"post": {
+				"description": "Logs in the user matching the provided credentials (if correct of course).",
+				"security": [
+					{
+						"basicHttpAuthentication": []
+					}
+				],
+				"responses": {
+					"400": {
+						"description": "No username provided."
+					},
+					"401": {
+						"description": "User not found, or the username and password don't match, or request does not include a 'Basic' auth header."
+					},
+					"422": {
+						"description": "The request 'Basic' auth is invalid."
+					},
+					"200": {
+						"description": "User logged in.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"description": "Unique identifiable user details.",
+									"properties": {
+										"userID": {
+											"type": "number"
+										},
+										"username": {
+											"type": "string"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/user/about": {
+			"get": {
+				"description": "Gets details about the currently logged-in user.",
+				"security": [
+					{
+						"bearerHttpAuthentication": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "number"
+										},
+										"username": {
+											"type": "string"
+										},
+										"role": {
+											"type": "integer",
+											"enum": [1, 2]
+										},
+										"usesAuthentication": {
+											"type": "boolean"
+										},
+										"dateAdded": {
+											"type": "number"
+										}
+									}
+								}
+							}
+						}
+					},
+					"410": {
+						"description": "The user does not exist, though the bearer token was valid at a previous point in time."
+					},
+					"401": {
+						"description": "Unauthorized. The bearer token has expired, does not exist, or was encoded using an outdated secret key."
+					},
+					"500": {
+						"description": "Unexpected server error."
+					}
+				}
+			}
+		}
+	}
+}
