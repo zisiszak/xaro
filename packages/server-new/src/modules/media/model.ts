@@ -2,7 +2,7 @@ import { type Selectable } from 'kysely';
 import { type TableSelection } from '~/modules/database.schema.js';
 import { type MediaTableSchema } from './sqlite.table.js';
 
-export interface AboutMedia extends Selectable<MediaTableSchema> {
+export interface FullMediaRecord extends Selectable<MediaTableSchema> {
 	source: MediaSourceRecord;
 	sorting: {
 		tags: string[];

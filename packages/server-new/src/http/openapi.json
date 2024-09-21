@@ -6,6 +6,192 @@
 	},
 	"servers": [],
 	"components": {
+		"schemas": {
+			"fileRecord": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "integer"
+					},
+					"originalFileID": {
+						"type": "integer",
+						"nullable": true
+					},
+					"generatedFromFileID": {
+						"type": "integer",
+						"nullable": true
+					},
+					"kind": {
+						"type": "string",
+						"enum": ["original", "optimised"]
+					},
+					"label": {
+						"type": "string",
+						"nullable": true
+					},
+					"libraryPath": {
+						"type": "string",
+						"nullable": true
+					},
+					"formatID": {
+						"type": "integer"
+					},
+					"size": {
+						"type": "integer"
+					},
+					"fileHash": {
+						"type": "string"
+					},
+					"dataHash": {
+						"type": "string",
+						"nullable": true
+					},
+					"dateAdded": {
+						"type": "integer"
+					},
+					"dateTrashed": {
+						"type": "integer",
+						"nullable": true
+					}
+				},
+				"required": [
+					"id",
+					"originalFileID",
+					"generatedFromFileID",
+					"kind",
+					"label",
+					"libraryPath",
+					"formatID",
+					"size",
+					"fileHash",
+					"dataHash",
+					"dateAdded",
+					"dateTrashed"
+				]
+			},
+			"mediaFilesRecord": {
+				"type": "object",
+				"properties": {
+					"media": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/fileRecord"
+						}
+					},
+					"thumbnail": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/fileRecord"
+						}
+					},
+					"videoPreview": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/fileRecord"
+						}
+					},
+					"subtitles": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/fileRecord"
+						}
+					},
+					"metadata": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/fileRecord"
+						}
+					},
+					"dump": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/fileRecord"
+						}
+					}
+				}
+			},
+			"platformMediaSourceRecord": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "integer"
+					},
+					"platformID": {
+						"type": "integer"
+					},
+					"platformCommunityID": {
+						"type": "integer",
+						"nullable": true
+					},
+					"platformProfileID": {
+						"type": "integer",
+						"nullable": true
+					},
+					"metadata": {
+						"type": "object"
+					},
+					"sourceId": {
+						"type": "string"
+					},
+					"sourceUrl": {
+						"type": "string",
+						"nullable": true
+					}
+				},
+				"required": [
+					"id",
+					"platformID",
+					"platformCommunityID",
+					"platformProfileID",
+					"metadata",
+					"sourceId",
+					"sourceUrl"
+				]
+			},
+			"mediaSourceRecord": {
+				"type": "object",
+				"nullable": true,
+				"anyOf": [
+					{
+						"$ref": "#/components/schemas/platformMediaSourceRecord"
+					}
+				]
+			},
+			"fullMediaRecord": {
+				"type": "object",
+				"properties": {
+					"source": {
+						"$ref": "#/components/schemas/mediaSourceRecord"
+					},
+					"sorting": {
+						"type": "object",
+						"properties": {
+							"tags": {
+								"type": "array",
+								"items": {
+									"type": "string",
+									"uniqueItems": true
+								}
+							}
+						}
+					},
+					"files": {
+						"$ref": "#/components/schemas/mediaFilesRecord"
+					}
+				}
+			}
+		},
+		"responses": {
+			"userNotAuthorised": {
+				"description": "Unauthorized. Either the bearer token has expired, does not exist, or was encoded using an outdated secret key, or the user no longer exists even though the bearer token was valid at a previous point in time."
+			},
+			"unexpectedServerError": {
+				"description": "An unexpected server error occurred."
+			},
+			"userLacksPrivileges": {
+				"description": "The authenticated user lacks the necessary privileges to make this request."
+			}
+		},
 		"securitySchemes": {
 			"basicHttpAuthentication": {
 				"type": "http",
@@ -49,7 +235,7 @@
 						}
 					},
 					"409": {
-						"description": "Username taken."
+						"description": "Username is taken."
 					},
 					"422": {
 						"description": "The request 'Basic' auth is invalid."
@@ -96,10 +282,10 @@
 						}
 					},
 					"401": {
-						"description": "The request does not include a 'Basic' auth header."
+						"description": "The request is missing a 'Basic' auth header."
 					},
 					"500": {
-						"description": "Unexpected error."
+						"$ref": "#/components/responses/unexpectedServerError"
 					}
 				}
 			}
@@ -191,14 +377,84 @@
 							}
 						}
 					},
-					"410": {
-						"description": "The user does not exist, though the bearer token was valid at a previous point in time."
-					},
 					"401": {
-						"description": "Unauthorized. The bearer token has expired, does not exist, or was encoded using an outdated secret key."
+						"$ref": "#/components/responses/userNotAuthorised"
 					},
 					"500": {
-						"description": "Unexpected server error."
+						"$ref": "#/components/responses/unexpectedServerError"
+					}
+				}
+			}
+		},
+		"/media/{media_id}/about": {
+			"get": {
+				"parameters": [
+					{
+						"name": "media_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "number"
+						}
+					}
+				],
+				"security": [
+					{
+						"bearerHttpAuthentication": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/fullMediaRecord"
+								}
+							}
+						}
+					},
+					"401": {
+						"$ref": "#/components/responses/userLacksPrivileges"
+					},
+					"404": {
+						"description": "The Media does not exist."
+					},
+					"403": {
+						"description": "The authenticated user does not have access permissions to the Media."
+					},
+					"422": {
+						"description": "The 'media_id' parameter provided is not an integer."
+					},
+					"500": {
+						"$ref": "#/components/responses/unexpectedServerError"
+					}
+				}
+			}
+		},
+		"/media/upload": {
+			"post": {
+				"description": "Upload a single media item.",
+				"security": [
+					{
+						"bearerHttpAuthentication": []
+					}
+				],
+				"responses": {
+					"201": {
+						"description": "Media successfully uploaded."
+					},
+					"409": {
+						"description": "Duplicate media was found. The user has been linked to the existing media, but no new original file has been imported."
+					},
+					"401": {
+						"$ref": "#/components/responses/userLacksPrivileges"
+					},
+					"400": {
+						"description": "No files were uploaded."
+					},
+					"500": {
+						"$ref": "#/components/responses/unexpectedServerError"
 					}
 				}
 			}

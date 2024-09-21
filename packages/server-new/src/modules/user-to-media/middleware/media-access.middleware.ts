@@ -10,7 +10,7 @@ type Params = {
 
 export const mediaAccessMiddleware: RequestHandler<Params> = async (req, res, next) => {
 	const mediaID = cleanInt(req.params.media_id);
-	if (typeof mediaID === 'undefined') return void res.status(400).end();
+	if (typeof mediaID === 'undefined') return void res.status(422).end();
 
 	const { userID: userID, role: userRole } = req.userAccessToken!;
 
@@ -22,10 +22,11 @@ export const mediaAccessMiddleware: RequestHandler<Params> = async (req, res, ne
 	} else {
 		const mediaLinkedToUser = await userToMediaRepository.find(userID, mediaID);
 		if (mediaLinkedToUser) hasAccessAndExists = true;
+		else if (!(await mediaRepository.findByID(mediaID))) return void res.status(404).end();
 	}
 
 	if (hasAccessAndExists) {
 		req.mediaID = mediaID;
 		next();
-	} else return void res.status(401).end();
+	} else return void res.status(403).end();
 };

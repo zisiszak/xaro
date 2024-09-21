@@ -5,7 +5,7 @@ import {
 	FileToMediaRelationshipEnum,
 } from '../file-to-media/model.js';
 import { userToMediaRepository } from '../user-to-media/sqlite.repository.js';
-import { type AboutMedia, type MediaFilesRecord, type MediaSourceRecord } from './model.js';
+import { type FullMediaRecord, type MediaFilesRecord, type MediaSourceRecord } from './model.js';
 import { mediaRepository } from './sqlite.repository.js';
 
 const fileRelationshipToMediaRecordKeyMap: Record<FileToMediaRelationship, keyof MediaFilesRecord> =
@@ -75,7 +75,10 @@ export class Media {
 		return record;
 	}
 
-	static async getAboutMedia(mediaID: number, userID?: number): Promise<AboutMedia | undefined> {
+	static async getAboutMedia(
+		mediaID: number,
+		userID?: number,
+	): Promise<FullMediaRecord | undefined> {
 		const media = await mediaRepository.findByID(mediaID);
 		if (!media) return undefined;
 
@@ -94,7 +97,7 @@ export class Media {
 			source = {};
 		}
 
-		const record: AboutMedia = { ...media, files, sorting: { tags }, source };
+		const record: FullMediaRecord = { ...media, files, sorting: { tags }, source };
 		return record;
 	}
 
